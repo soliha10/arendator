@@ -1,0 +1,481 @@
+// Arendator — avtomobil arendasi va rassrochka platformasi
+// Prisma schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Enums
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ARENDATOR
+  ADMIN
+}
+
+enum ListingStatus {
+  DRAFT // qoralama
+  PENDING // moderatsiyada
+  ACTIVE // e'lon faol
+  PAUSED // vaqtincha to'xtatilgan
+  REJECTED // rad etilgan
+  ARCHIVED // arxivlangan
+  RENTED // arendaga berilgan
+}
+
+enum PlanType {
+  INSTALLMENT // rassrochka — oxirida mulk o'tadi
+  RENT // oddiy arenda — mulk o'tmaydi
+  LEASING // lizing — huquqiy shaklda
+}
+
+enum Currency {
+  UZS
+  USD
+}
+
+enum BodyType {
+  SEDAN
+  HATCHBACK
+  SUV
+  CROSSOVER
+  MINIVAN
+  COUPE
+  PICKUP
+  WAGON
+  VAN
+}
+
+enum Transmission {
+  MANUAL
+  AUTOMATIC
+  ROBOT
+  VARIATOR
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  GAS_PETROL
+  HYBRID
+  ELECTRIC
+}
+
+enum DriveType {
+  FWD
+  RWD
+  AWD
+}
+
+enum CarCondition {
+  NEW
+  USED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+/// To'lov grafigini hisoblash usuli
+enum CalcMethod {
+  ANNUITY // annuitet — qoldiqqa foiz, teng oylik to'lov
+  FLAT // oddiy ustama — foiz butun summaga, teng bo'linadi
+  FIXED // arendator oylik to'lovni o'zi kiritadi
+}
+
+enum ScheduleStatus {
+  PLANNED
+  PAID
+  OVERDUE
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Foydalanuvchilar
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id           String  @id @default(cuid())
+  phone        String  @unique // +998901234567
+  email        String? @unique
+  passwordHash String
+  fullName     String
+  avatarUrl    String?
+  role         Role    @default(USER)
+
+  isPhoneVerified Boolean @default(false)
+  isBlocked       Boolean @default(false)
+  // JWT'larni bekor qilish uchun: token ichidagi tv bilan solishtiriladi
+  tokenVersion    Int     @default(0)
+
+  profile   ArendatorProfile?
+  listings  Listing[]
+  favorites Favorite[]
+  leads     Lead[]
+  reviews   Review[]
+  auditLogs AuditLog[]
+
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([role])
+  @@index([createdAt])
+}
+
+/// Arendator (mashina beruvchi) kompaniya yoki jismoniy shaxs profili
+model ArendatorProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  slug        String  @unique
+  companyName String
+  legalName   String?
+  inn         String? // STIR
+  logoUrl     String?
+  about       String?
+  address     String?
+
+  regionId String?
+  region   Region? @relation(fields: [regionId], references: [id], onDelete: SetNull)
+
+  website      String?
+  telegram     String?
+  instagram    String?
+  workingHours String?
+
+  isVerified Boolean   @default(false)
+  verifiedAt DateTime?
+
+  // keshlangan agregatlar
+  ratingAvg    Float @default(0)
+  reviewCount  Int   @default(0)
+  listingCount Int   @default(0)
+
+  reviews Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isVerified])
+  @@index([regionId])
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Ma'lumotnomalar
+// ─────────────────────────────────────────────────────────────
+
+model Brand {
+  id     String     @id @default(cuid())
+  slug   String     @unique
+  name   String     @unique
+  logoUrl String?
+  models CarModel[]
+
+  listings Listing[]
+
+  @@index([name])
+}
+
+model CarModel {
+  id      String @id @default(cuid())
+  brandId String
+  brand   Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  slug String
+  name String
+
+  listings Listing[]
+
+  @@unique([brandId, slug])
+  @@index([brandId])
+}
+
+model Region {
+  id   String @id @default(cuid())
+  slug String @unique
+  name String
+
+  listings Listing[]
+  profiles ArendatorProfile[]
+
+  @@index([name])
+}
+
+/// Valyuta kursi — UZS'ga normalizatsiya qilish uchun
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  currency  Currency @unique
+  rateToUzs Decimal  @db.Decimal(18, 4) // 1 birlik = necha so'm
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+//  E'lonlar
+// ─────────────────────────────────────────────────────────────
+
+model Listing {
+  id   String @id @default(cuid())
+  slug String @unique
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String? @db.Text
+
+  // Avtomobil xususiyatlari
+  brandId       String
+  brand         Brand        @relation(fields: [brandId], references: [id])
+  modelId       String
+  model         CarModel     @relation(fields: [modelId], references: [id])
+  year          Int
+  bodyType      BodyType
+  transmission  Transmission
+  fuelType      FuelType
+  driveType     DriveType
+  engineVolume  Decimal?     @db.Decimal(4, 1) // 1.8
+  color         String?
+  mileage       Int          @default(0) // km
+  condition     CarCondition @default(USED)
+  seats         Int?         @default(5)
+
+  // Joylashuv va aloqa
+  regionId     String
+  region       Region  @relation(fields: [regionId], references: [id])
+  address      String?
+  contactPhone String
+  contactName  String?
+
+  status      ListingStatus @default(DRAFT)
+  rejectReason String?
+
+  // Denormalizatsiya — filtr va saralash tez ishlashi uchun (UZS'da)
+  minMonthlyPaymentUzs Decimal? @db.Decimal(18, 2)
+  minDownPaymentUzs    Decimal? @db.Decimal(18, 2)
+  carPriceUzs          Decimal? @db.Decimal(18, 2)
+  minTermMonths        Int?
+  maxTermMonths        Int?
+  hasInstallment       Boolean  @default(false)
+  hasRent              Boolean  @default(false)
+
+  viewCount     Int @default(0)
+  favoriteCount Int @default(0)
+  leadCount     Int @default(0)
+
+  isFeatured Boolean @default(false)
+
+  images ListingImage[]
+  plans  RentalPlan[]
+  favorites Favorite[]
+  leads     Lead[]
+  reviews   Review[]
+
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([brandId, modelId])
+  @@index([regionId])
+  @@index([minMonthlyPaymentUzs])
+  @@index([carPriceUzs])
+  @@index([year])
+  @@index([ownerId, status])
+  @@index([isFeatured, publishedAt(sort: Desc)])
+}
+
+model ListingImage {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  url         String
+  width       Int?
+  height      Int?
+  blurDataUrl String? @db.Text
+  position    Int     @default(0)
+  isCover     Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([listingId, position])
+}
+
+// ─────────────────────────────────────────────────────────────
+//  To'lov shartlari va grafik
+// ─────────────────────────────────────────────────────────────
+
+/// Bitta e'londa bir nechta shart bo'lishi mumkin: 12 oy, 24 oy, 36 oy
+model RentalPlan {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  name     String // "24 oylik rassrochka"
+  planType PlanType @default(INSTALLMENT)
+  currency Currency @default(UZS)
+
+  carPrice       Decimal @db.Decimal(18, 2) // mashina to'liq narxi
+  downPayment    Decimal @db.Decimal(18, 2) // boshlang'ich to'lov
+  termMonths     Int // muddat (oy)
+  monthlyPayment Decimal @db.Decimal(18, 2) // oylik to'lov
+  totalPayable   Decimal @db.Decimal(18, 2) // downPayment + monthly*term
+  markupAmount   Decimal @db.Decimal(18, 2) @default(0) // ustama (jami)
+  markupPercent  Decimal @db.Decimal(6, 2)  @default(0) // samarali yillik ustama foizi
+  calcMethod     CalcMethod @default(ANNUITY)
+
+  // UZS'ga normalizatsiya — taqqoslash va filtr uchun
+  carPriceUzs       Decimal @db.Decimal(18, 2)
+  downPaymentUzs    Decimal @db.Decimal(18, 2)
+  monthlyPaymentUzs Decimal @db.Decimal(18, 2)
+
+  paymentDay Int @default(5) // har oyning nechinchi kuni
+  startDate  DateTime? // grafik boshlanish sanasi
+
+  // Qo'shimcha shartlar
+  depositAmount      Decimal? @db.Decimal(18, 2) // zalog
+  insuranceIncluded  Boolean  @default(false)
+  cascoIncluded      Boolean  @default(false)
+  maintenanceIncluded Boolean @default(false)
+  mileageLimitPerYear Int? // yillik km limiti
+  extraMileageFee     Decimal? @db.Decimal(12, 2) // limitdan oshgani uchun 1 km narxi
+  ownershipTransfer   Boolean  @default(true) // oxirida mulk o'tadimi
+  earlyPayoffAllowed  Boolean  @default(true)
+  penaltyPerDay       Decimal? @db.Decimal(12, 2) // kechikkanlik uchun jarima
+  requiredDocuments   String?  @db.Text
+  notes               String?  @db.Text
+
+  isDefault Boolean @default(false)
+
+  schedule ScheduleItem[]
+  leads    Lead[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listingId])
+  @@index([monthlyPaymentUzs])
+  @@index([termMonths])
+  @@index([planType])
+}
+
+/// Oyma-oy to'lov grafigi. Arendator qatorlarni qo'lda tahrirlashi mumkin.
+model ScheduleItem {
+  id     String     @id @default(cuid())
+  planId String
+  plan   RentalPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  monthIndex Int // 1..termMonths
+  dueDate    DateTime
+  amount     Decimal @db.Decimal(18, 2) // shu oy to'lovi
+  principal  Decimal @db.Decimal(18, 2) @default(0) // asosiy qarz qismi
+  markup     Decimal @db.Decimal(18, 2) @default(0) // ustama qismi
+  balanceAfter Decimal @db.Decimal(18, 2) @default(0) // to'lovdan keyingi qoldiq
+
+  status   ScheduleStatus @default(PLANNED)
+  isCustom Boolean        @default(false) // qo'lda o'zgartirilganmi
+  note     String?
+
+  @@unique([planId, monthIndex])
+  @@index([planId, dueDate])
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Foydalanuvchi harakatlari
+// ─────────────────────────────────────────────────────────────
+
+model Favorite {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+/// Ariza — foydalanuvchi muayyan shart bo'yicha murojaat qiladi
+model Lead {
+  id String @id @default(cuid())
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  planId String?
+  plan   RentalPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  fullName String
+  phone    String
+  message  String? @db.Text
+
+  status      LeadStatus @default(NEW)
+  ownerNote   String?    @db.Text
+  contactedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listingId, createdAt(sort: Desc)])
+  @@index([userId])
+  @@index([status])
+}
+
+model Review {
+  id String @id @default(cuid())
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  profileId String
+  profile   ArendatorProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  rating  Int // 1..5
+  comment String? @db.Text
+
+  isPublished Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([authorId, profileId])
+  @@index([profileId, createdAt(sort: Desc)])
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  action     String // "listing.approve", "listing.reject", ...
+  entityType String
+  entityId   String
+  meta       Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt(sort: Desc)])
+}

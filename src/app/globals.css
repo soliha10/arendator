@@ -1,0 +1,242 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────
+   Dizayn tokenlari
+   Yorugʻ rejim :root da, qorongʻi rejim ikkala holatda ham
+   (tizim sozlamasi va qoʻlda tanlash) qayta belgilanadi.
+   ────────────────────────────────────────────────────────────── */
+
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-2: #f2f4f7;
+  --surface-3: #e9ecf2;
+  --border: #e2e6ee;
+  --border-strong: #cdd4e0;
+
+  --text: #101828;
+  --text-muted: #667085;
+  --text-subtle: #98a2b3;
+
+  --primary: #1e5eff;
+  --primary-hover: #1a4fd6;
+  --primary-soft: #e8efff;
+  --primary-fg: #ffffff;
+
+  --success: #0f9d58;
+  --success-soft: #e6f6ee;
+  --warning: #b7791f;
+  --warning-soft: #fdf3e2;
+  --danger: #d92d20;
+  --danger-soft: #fdeceb;
+  --accent: #f2994a;
+
+  --ring: #1e5eff;
+  --shadow-color: 220 20% 40%;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0e14;
+    --surface: #121722;
+    --surface-2: #182030;
+    --surface-3: #202a3d;
+    --border: #232d3f;
+    --border-strong: #33405a;
+
+    --text: #e9edf5;
+    --text-muted: #9aa6bd;
+    --text-subtle: #6d7a92;
+
+    --primary: #5b8dff;
+    --primary-hover: #7aa2ff;
+    --primary-soft: #16233f;
+    --primary-fg: #08101f;
+
+    --success: #34c98a;
+    --success-soft: #10281f;
+    --warning: #e0a44a;
+    --warning-soft: #2a2113;
+    --danger: #f87171;
+    --danger-soft: #2c1618;
+    --accent: #f2a35e;
+
+    --ring: #5b8dff;
+    --shadow-color: 220 40% 2%;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0e14;
+  --surface: #121722;
+  --surface-2: #182030;
+  --surface-3: #202a3d;
+  --border: #232d3f;
+  --border-strong: #33405a;
+
+  --text: #e9edf5;
+  --text-muted: #9aa6bd;
+  --text-subtle: #6d7a92;
+
+  --primary: #5b8dff;
+  --primary-hover: #7aa2ff;
+  --primary-soft: #16233f;
+  --primary-fg: #08101f;
+
+  --success: #34c98a;
+  --success-soft: #10281f;
+  --warning: #e0a44a;
+  --warning-soft: #2a2113;
+  --danger: #f87171;
+  --danger-soft: #2c1618;
+  --accent: #f2a35e;
+
+  --ring: #5b8dff;
+  --shadow-color: 220 40% 2%;
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-subtle: var(--text-subtle);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-fg: var(--primary-fg);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-accent: var(--accent);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-card: 0.875rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Raqamlar jadvalda tekis turishi uchun */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .container-page {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 80rem;
+    padding-inline: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-page {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+  }
+
+  .surface-shadow {
+    box-shadow:
+      0 1px 2px hsl(var(--shadow-color) / 0.06),
+      0 4px 16px -6px hsl(var(--shadow-color) / 0.12);
+  }
+
+  .hide-scrollbar {
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Uzun matnni n qatorda kesish */
+  .line-clamp-1x { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .line-clamp-2x { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .line-clamp-3x { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+}
+
+/* Skeleton animatsiyasi */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(0 0% 100% / 0.08),
+    transparent
+  );
+  animation: shimmer 1.6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
