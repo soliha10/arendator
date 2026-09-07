@@ -104,6 +104,24 @@ Parol hammasi uchun bir xil: **`parol12345`**
 | `npm run db:studio` | Prisma Studio |
 | `npm run shots` | Asosiy sahifalar skrinshotlari (yorugʻ + qorongʻi) |
 
+### `npm install` paytidagi ogohlantirishlar
+
+```
+npm warn deprecated eslint@9.39.5: This version is no longer supported.
+```
+
+Bu **kutilgan holat, xato emas**. ESLint 10 chiqqach butun 9.x liniyasi
+"deprecated" deb belgilandi, lekin `eslint-config-next@16` hali ESLint 10 bilan
+ishlamaydi: uning ichidagi `eslint-plugin-react@7.37.5` faqat `eslint ^9.7`
+gacha qoʻllab-quvvatlaydi (ESLint 10 da `context.getFilename()` olib tashlangan).
+
+Shu sabab `eslint` **9.39.5** ga aniq qadab qoʻyilgan (`-E`). 9.39.5 — 9.x
+liniyasining oxirgi (`maintenance`) relizi, xavfsizlik tuzatishlarini oladi.
+Next.js ESLint 10 ga mos konfiguratsiya chiqargach yangilanadi.
+
+Postinstall'dagi `prisma generate` — normal qadam: Prisma klientini
+`node_modules` ichida qayta yaratadi.
+
 ---
 
 ## Loyiha tuzilishi
