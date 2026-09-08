@@ -41,7 +41,10 @@ yarn-error.log*
 next-env.d.ts
 
 # lokal yuklangan fayllar
-/public/uploads
+/public/uploads/*
+# Demo (seed) rasmlari — Vercel'da fayl tizimi read-only, shuning uchun
+# generatsiya qilingan SVG'lar repo bilan birga boradi.
+!/public/uploads/seed
 
 # env
 .env

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400" role="img" aria-label="BYD Seal 2024">
+  <defs>
+    <linearGradient id="bg" gradientTransform="rotate(25)">
+      <stop offset="0%" stop-color="#03291f"/>
+      <stop offset="55%" stop-color="#0b7a5a"/>
+      <stop offset="100%" stop-color="#03291f"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.92"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.62"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#bg)"/>
+  <circle cx="530" cy="70" r="150" fill="#ffffff" opacity="0.06"/>
+  <circle cx="90" cy="330" r="120" fill="#000000" opacity="0.08"/>
+  <g transform="translate(0 26)">
+    <ellipse cx="330" cy="292" rx="240" ry="16" fill="#000000" opacity="0.18"/>
+    <path d="M92 252 q4 -46 44 -60 l60 -34 q26 -14 58 -16 l96 -6 q40 -2 74 18 l86 50 68 12 q28 6 30 34 l0 12 q0 10 -12 10 l-40 0 a34 34 0 0 0 -68 0 l-198 0 a34 34 0 0 0 -68 0 l-38 0 q-14 0 -14 -12 z" fill="url(#body)"/>
+    <path d="M196 168 l50 -28 q20 -11 44 -12 l52 -3 0 46 z M366 171 l0 -44 34 -2 q30 -2 56 14 l58 34 z" fill="#03291f" opacity="0.55"/>
+    <circle cx="204" cy="272" r="34" fill="#12151a"/>
+    <circle cx="204" cy="272" r="15" fill="#ffffff" opacity="0.75"/>
+    <circle cx="470" cy="272" r="34" fill="#12151a"/>
+    <circle cx="470" cy="272" r="15" fill="#ffffff" opacity="0.75"/>
+  </g>
+</svg>

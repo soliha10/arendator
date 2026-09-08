@@ -3,6 +3,7 @@ import { mkdir, writeFile, unlink } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
 import { nanoid } from 'nanoid'
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from './constants'
 
 /**
  * Rasm saqlash qatlami.
@@ -15,7 +16,7 @@ import { nanoid } from 'nanoid'
  * Vercel'ga chiqqanda faqat STORAGE_DRIVER=s3 qilinadi.
  */
 
-export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024 // 8 MB
+export { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from './constants'
 export const ALLOWED_MIME = [
   'image/jpeg',
   'image/png',
@@ -40,7 +41,7 @@ function assertValid(file: File) {
   if (file.size === 0) throw new UploadError('Fayl boʻsh')
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new UploadError(
-      `Rasm hajmi ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB dan oshmasligi kerak`,
+      `Rasm hajmi ${MAX_UPLOAD_MB} MB dan oshmasligi kerak`,
     )
   }
   if (!ALLOWED_MIME.includes(file.type as (typeof ALLOWED_MIME)[number])) {

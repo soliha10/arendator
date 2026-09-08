@@ -4,7 +4,7 @@ import * as React from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, ImagePlus, Loader2, Star, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
-import { MAX_LISTING_IMAGES } from '@/lib/constants'
+import { MAX_LISTING_IMAGES, MAX_UPLOAD_MB } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import type { ImageDraft } from './types'
 
@@ -16,9 +16,19 @@ export function ImageUploader({
   onChange: (images: ImageDraft[]) => void
 }) {
   const [uploading, setUploading] = React.useState(false)
+  const [progress, setProgress] = React.useState({ done: 0, total: 0 })
   const [dragOver, setDragOver] = React.useState(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
 
+  /**
+   * Har bir rasm alohida soʻrovda ketadi.
+   *
+   * Hammasini bitta formData'ga yigʻsak, serverless funksiyaning
+   * soʻrov tanasi limitiga (Vercel'da ~4.5 MB) urilamiz va bir nechta
+   * telefon fotosurati birdaniga 413 beradi. Bittalab yuborilganda
+   * limitga faqat bitta fayl hisoblanadi, qolaversa qismiy muvaffaqiyat
+   * ham saqlanadi: 5 tadan 4 tasi yuklansa, oʻsha 4 tasi qoladi.
+   */
   const upload = async (files: FileList | File[]) => {
     const list = Array.from(files)
     if (list.length === 0) return
@@ -33,25 +43,45 @@ export function ImageUploader({
       toast.warning(`Faqat ${room} ta rasm qoʻshildi — limit ${MAX_LISTING_IMAGES} ta`)
     }
 
-    const formData = new FormData()
-    for (const file of selected) formData.append('files', file)
-
     setUploading(true)
-    try {
-      const response = await fetch('/api/upload', { method: 'POST', body: formData })
-      const data = await response.json()
-      if (!response.ok) {
-        toast.error(data.error ?? 'Rasmni yuklab boʻlmadi')
-        return
+    setProgress({ done: 0, total: selected.length })
+
+    const uploaded: ImageDraft[] = []
+    let firstError: string | null = null
+
+    for (const file of selected) {
+      const formData = new FormData()
+      formData.append('files', file)
+      try {
+        const response = await fetch('/api/upload', { method: 'POST', body: formData })
+        if (!response.ok) {
+          // 413 da Vercel HTML qaytaradi — json() ni himoyalaymiz
+          const data = await response.json().catch(() => null)
+          firstError ??=
+            data?.error ??
+            (response.status === 413
+              ? `«${file.name}» hajmi katta — kichikroq rasm tanlang`
+              : 'Rasmni yuklab boʻlmadi')
+          continue
+        }
+        const data = (await response.json()) as { images: ImageDraft[] }
+        uploaded.push(...data.images)
+      } catch {
+        firstError ??= 'Tarmoq xatosi. Qayta urinib koʻring.'
+      } finally {
+        setProgress((p) => ({ ...p, done: p.done + 1 }))
       }
-      onChange([...images, ...data.images])
-      toast.success(`${data.images.length} ta rasm yuklandi`)
-    } catch {
-      toast.error('Tarmoq xatosi. Qayta urinib koʻring.')
-    } finally {
-      setUploading(false)
-      if (inputRef.current) inputRef.current.value = ''
     }
+
+    if (uploaded.length > 0) {
+      onChange([...images, ...uploaded])
+      toast.success(`${uploaded.length} ta rasm yuklandi`)
+    }
+    if (firstError) toast.error(firstError)
+
+    setUploading(false)
+    setProgress({ done: 0, total: 0 })
+    if (inputRef.current) inputRef.current.value = ''
   }
 
   const move = (index: number, delta: number) => {
@@ -97,10 +127,13 @@ export function ImageUploader({
           <ImagePlus className="size-8 text-subtle" />
         )}
         <p className="mt-3 text-sm font-medium text-text">
-          {uploading ? 'Yuklanmoqda…' : 'Rasmlarni bu yerga tashlang'}
+          {uploading
+            ? `Yuklanmoqda… ${progress.done}/${progress.total}`
+            : 'Rasmlarni bu yerga tashlang'}
         </p>
         <p className="mt-1 text-[13px] text-muted">
-          JPG, PNG yoki WebP · koʻpi bilan {MAX_LISTING_IMAGES} ta · har biri 8 MB gacha
+          JPG, PNG yoki WebP · koʻpi bilan {MAX_LISTING_IMAGES} ta · har biri{' '}
+          {MAX_UPLOAD_MB} MB gacha
         </p>
         <button
           type="button"

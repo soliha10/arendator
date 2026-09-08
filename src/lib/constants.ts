@@ -144,6 +144,14 @@ export const MAX_COMPARE_ITEMS = 4
 /** Bir e'longa maksimal rasm */
 export const MAX_LISTING_IMAGES = 15
 
+/**
+ * Bitta rasmning maksimal hajmi.
+ * Serverless funksiyaning so'rov tanasi limiti (Vercel'da ~4.5 MB) dan
+ * past turishi kerak — aks holda so'rov kodga yetib bormay 413 bo'ladi.
+ */
+export const MAX_UPLOAD_MB = 4
+export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
+
 /** Bir e'longa maksimal to'lov sharti */
 export const MAX_PLANS_PER_LISTING = 6
 
