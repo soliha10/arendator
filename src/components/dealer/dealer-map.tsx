@@ -45,7 +45,7 @@ export async function DealerMap({
           title={fmt(t.iframeTitle, { name: active.name })}
           src={src}
           loading="lazy"
-          className="block h-[320px] w-full sm:h-[380px]"
+          className="block h-80 w-full sm:h-95"
           referrerPolicy="no-referrer"
         />
         <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-3 rounded-lg bg-surface/95 px-3 py-2 shadow-sm backdrop-blur sm:right-auto">
@@ -66,7 +66,7 @@ export async function DealerMap({
         </div>
       </div>
 
-      <ul className="max-h-[380px] space-y-1.5 overflow-y-auto scroll-contain pr-1">
+      <ul className="max-h-95 space-y-1.5 overflow-y-auto scroll-contain pr-1">
         {points.map((p) => {
           const isActive = p.slug === active.slug
           return (

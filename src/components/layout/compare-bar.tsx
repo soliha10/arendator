@@ -25,7 +25,7 @@ export function CompareBar() {
       <div className="container-page">
         <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-border bg-surface/95 p-2.5 surface-shadow backdrop-blur-lg">
           <div className="flex shrink-0 items-center gap-2 pl-1 text-sm font-medium text-text sm:pl-2">
-            <Scale className="size-[18px] text-primary" aria-hidden />
+            <Scale className="size-4.5 text-primary" aria-hidden />
             <span className="hidden sm:inline">{t.title}</span>
             <span className="tabular text-subtle">
               {count}/{MAX_COMPARE_ITEMS}

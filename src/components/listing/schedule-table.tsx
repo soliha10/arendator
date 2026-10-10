@@ -132,7 +132,7 @@ export function ScheduleTable({
       </ul>
 
       <div className="hidden overflow-x-auto rounded-xl border border-border sm:block">
-        <table className="w-full min-w-[640px] text-sm">
+        <table className="w-full min-w-160 text-sm">
           <thead className="bg-surface-2">
             <tr className="text-[11px] font-semibold uppercase tracking-wider text-muted">
               <th className="px-4 py-3 text-left">{t.colMonth}</th>

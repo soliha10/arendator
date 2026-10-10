@@ -124,7 +124,7 @@ export default async function CabinetPage() {
           {attention.length > 0 || weak.length > 0 ? (
             <section className="rounded-xl border border-warning/30 bg-warning-soft/50 p-4 sm:p-5">
               <h2 className="flex items-center gap-2 text-base font-bold text-text">
-                <AlertTriangle className="size-[18px] text-warning" aria-hidden /> {t.attention}
+                <AlertTriangle className="size-4.5 text-warning" aria-hidden /> {t.attention}
               </h2>
               {attention.length > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-2">

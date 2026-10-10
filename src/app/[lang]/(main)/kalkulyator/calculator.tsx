@@ -734,7 +734,7 @@ function YearTable({
         })}
       </ul>
       <div className="hidden overflow-x-auto rounded-xl border border-border sm:block">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-180 text-sm">
           <thead className="bg-surface-2">
             <tr className="text-[12px] font-semibold text-muted">
               <th className="px-4 py-3 text-left">{t.table.colPeriod}</th>

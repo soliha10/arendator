@@ -57,7 +57,7 @@ export function MobileCta({
           onClick={() => goToLeadForm(plan?.id ?? null)}
           className="inline-flex h-12 shrink-0 items-center gap-1.5 rounded-[12px] bg-primary px-5 text-[15px] font-semibold text-primary-fg transition-colors active:bg-primary-hover"
         >
-          {t.apply} <ArrowRight className="size-[18px]" aria-hidden />
+          {t.apply} <ArrowRight className="size-4.5" aria-hidden />
         </button>
       </div>
     </div>

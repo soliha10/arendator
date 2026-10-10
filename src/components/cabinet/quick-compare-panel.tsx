@@ -14,7 +14,7 @@ import { MAX_COMPARE_ITEMS } from '@/lib/constants'
 export function QuickComparePanel() {
   const { items, isReady, remove, clear } = useCompare()
   const t = useMessages().cabinet.compare
-  if (!isReady) return <div className="h-[76px] rounded-xl border border-border bg-surface" aria-hidden />
+  if (!isReady) return <div className="h-19 rounded-xl border border-border bg-surface" aria-hidden />
 
   if (items.length === 0) {
     return (

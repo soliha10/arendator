@@ -28,7 +28,7 @@ export function FilterSection({
         <span className="flex items-center gap-2 text-sm font-semibold text-text">
           {title}
           {count ? (
-            <span className="tabular flex size-[18px] items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-fg">
+            <span className="tabular flex size-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-fg">
               {count}
             </span>
           ) : null}

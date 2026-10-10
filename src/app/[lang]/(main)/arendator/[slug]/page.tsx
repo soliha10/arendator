@@ -5,8 +5,7 @@ import {
   KeyRound, MapPin, MessageSquareText, Phone, Send, ShieldCheck, Star,
 } from 'lucide-react'
 import { getArendatorBySlug } from '@/server/profiles'
-import { prisma } from '@/lib/prisma'
-import { LISTING_CARD_SELECT, toListingCardDto } from '@/server/mappers'
+import { getActiveListingsByOwner } from '@/server/listings'
 import { getFavoriteIds } from '@/server/actions/favorites'
 import { formatDateLong, formatPhone, formatRelative } from '@/lib/format'
 import { SITE, telegramUrl } from '@/lib/site'
@@ -64,15 +63,10 @@ export default async function DealerPage(props: PageProps<'/[lang]/arendator/[sl
     ? regionLabel(m, profile.regionSlug, profile.regionName)
     : null
 
-  const [rows, favoriteIds] = await Promise.all([
-    prisma.listing.findMany({
-      where: { ownerId: profile.ownerId, status: 'ACTIVE' },
-      select: LISTING_CARD_SELECT,
-      orderBy: [{ promotion: 'desc' }, { publishedAt: { sort: 'desc', nulls: 'last' } }],
-    }),
+  const [listings, favoriteIds] = await Promise.all([
+    getActiveListingsByOwner(profile.ownerId),
     getFavoriteIds(),
   ])
-  const listings = rows.map(toListingCardDto)
 
   const contacts = [
     profile.phone

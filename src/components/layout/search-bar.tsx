@@ -46,7 +46,7 @@ export function SearchBar({
   return (
     <form onSubmit={submit} className={cn('relative', className)} role="search">
       <Search
-        className="pointer-events-none absolute left-3 top-1/2 size-[18px] -translate-y-1/2 text-subtle"
+        className="pointer-events-none absolute left-3 top-1/2 size-4.5 -translate-y-1/2 text-subtle"
         aria-hidden
       />
       <input
@@ -77,7 +77,7 @@ export function SearchBar({
         aria-label={t.submit}
         className="absolute right-1.5 top-1/2 flex h-9 w-10 -translate-y-1/2 items-center justify-center rounded-[9px] bg-primary text-[13px] font-medium text-primary-fg transition-colors hover:bg-primary-hover sm:h-8 sm:w-auto sm:px-4"
       >
-        <Search className="size-[18px] sm:hidden" aria-hidden />
+        <Search className="size-4.5 sm:hidden" aria-hidden />
         <span className="hidden sm:inline">{t.submit}</span>
       </button>
       </>

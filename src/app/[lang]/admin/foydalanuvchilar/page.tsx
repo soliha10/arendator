@@ -82,7 +82,7 @@ export default async function AdminUsersPage() {
       </ul>
 
       <div className="hidden overflow-x-auto rounded-[14px] border border-border md:block">
-        <table className="w-full min-w-[840px] text-sm">
+        <table className="w-full min-w-210 text-sm">
           <thead className="bg-surface-2 text-left text-[12px] uppercase tracking-wide text-subtle">
             <tr>
               <th className="px-4 py-3 font-semibold">{t.cols.user}</th>

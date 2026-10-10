@@ -72,7 +72,7 @@ export function ThemeToggle({ className }: { className?: string }) {
         className,
       )}
     >
-      <Icon className="size-[18px]" />
+      <Icon className="size-4.5" />
     </button>
   )
 }
@@ -105,7 +105,7 @@ export function ThemeSwitch({ className }: { className?: string }) {
             theme === o.value ? 'bg-surface text-primary shadow-sm' : 'text-muted hover:text-text',
           )}
         >
-          <o.icon className="size-[18px]" aria-hidden />
+          <o.icon className="size-4.5" aria-hidden />
         </button>
       ))}
     </div>

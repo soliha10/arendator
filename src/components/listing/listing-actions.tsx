@@ -50,7 +50,7 @@ export function CompareButton({
         className,
       )}
     >
-      {active ? <Check className="size-[18px]" /> : <Scale className="size-[18px]" />}
+      {active ? <Check className="size-4.5" /> : <Scale className="size-4.5" />}
       {withLabel ? <span>{active ? t.inCompare : t.label}</span> : null}
     </button>
   )
@@ -120,7 +120,7 @@ export function FavoriteButton({
         className,
       )}
     >
-      <Heart className={cn('size-[18px]', favorited && 'fill-current')} />
+      <Heart className={cn('size-4.5', favorited && 'fill-current')} />
       {withLabel ? <span>{favorited ? t.saved : t.add}</span> : null}
     </button>
   )

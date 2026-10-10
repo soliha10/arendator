@@ -13,7 +13,7 @@ export function Checkbox({
   return (
     <CheckboxPrimitive.Root
       className={cn(
-        'flex size-5 shrink-0 items-center justify-center rounded-[5px] border border-border-strong bg-surface transition-colors lg:size-[18px]',
+        'flex size-5 shrink-0 items-center justify-center rounded-[5px] border border-border-strong bg-surface transition-colors lg:size-4.5',
         'data-[state=checked]:border-primary data-[state=checked]:bg-primary',
         'disabled:cursor-not-allowed disabled:opacity-50',
         className,
@@ -74,14 +74,14 @@ export function Switch({
   return (
     <SwitchPrimitive.Root
       className={cn(
-        'relative h-[22px] w-[38px] shrink-0 rounded-full border border-border-strong bg-surface-3 transition-colors',
+        'relative h-5.5 w-9.5 shrink-0 rounded-full border border-border-strong bg-surface-3 transition-colors',
         'data-[state=checked]:border-primary data-[state=checked]:bg-primary',
         'disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
       {...props}
     >
-      <SwitchPrimitive.Thumb className="block size-[16px] translate-x-[2px] rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-[18px]" />
+      <SwitchPrimitive.Thumb className="block size-4 translate-x-[2px] rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-[18px]" />
     </SwitchPrimitive.Root>
   )
 }

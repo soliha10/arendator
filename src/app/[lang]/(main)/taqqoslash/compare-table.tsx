@@ -435,7 +435,7 @@ export function CompareTable() {
 
   const columnWidth = `${Math.floor(100 / Math.max(1, listings.length))}%`
   // Telefonda 200px lik sarlavha ustuni ekranning yarmini yeb qoʻyardi
-  const labelColClass = 'w-[108px] min-w-[108px] sm:w-[200px] sm:min-w-[200px]'
+  const labelColClass = 'w-27 min-w-27 sm:w-50 sm:min-w-50'
 
   return (
     <div>
@@ -512,7 +512,7 @@ export function CompareTable() {
             {listings.map((l) => (
               <col
                 key={l.id}
-                className="w-[150px] min-w-[150px] sm:w-[200px] sm:min-w-[200px]"
+                className="w-37.5 min-w-37.5 sm:w-50 sm:min-w-50"
                 style={{ width: columnWidth }}
               />
             ))}

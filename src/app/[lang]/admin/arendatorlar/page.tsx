@@ -102,7 +102,7 @@ export default async function AdminArendatorsPage() {
       </ul>
 
       <div className="hidden overflow-x-auto rounded-[14px] border border-border md:block">
-        <table className="w-full min-w-[860px] text-sm">
+        <table className="w-full min-w-215 text-sm">
           <thead className="bg-surface-2 text-left text-[12px] uppercase tracking-wide text-subtle">
             <tr>
               <th className="px-4 py-3 font-semibold">{t.cols.company}</th>

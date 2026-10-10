@@ -88,7 +88,36 @@ export async function getAllArendators(): Promise<ArendatorCardDto[]> {
   return rows.map(toCard)
 }
 
-export async function getArendatorBySlug(slug: string) {
+/** Diler sahifasi uchun to'liq ma'lumot — sahifa Prisma tiplariga bog'liq bo'lmasin */
+export interface DealerReviewDto {
+  id: string
+  rating: number
+  comment: string | null
+  createdAt: string
+  authorName: string
+}
+
+export interface DealerProfileDto extends ArendatorCardDto {
+  legalName: string | null
+  inn: string | null
+  address: string | null
+  website: string | null
+  telegram: string | null
+  instagram: string | null
+  workingHours: string | null
+  tags: string[]
+  latitude: number | null
+  longitude: number | null
+  createdAt: string
+  ownerId: string
+  accountType: 'INDIVIDUAL' | 'BUSINESS'
+  rentedCount: number
+  phone: string
+  contactName: string
+  reviews: DealerReviewDto[]
+}
+
+export async function getArendatorBySlug(slug: string): Promise<DealerProfileDto | null> {
   const profile = await prisma.arendatorProfile.findUnique({
     where: { slug },
     select: {
@@ -151,7 +180,7 @@ export async function getArendatorBySlug(slug: string) {
     rentedCount: profile.user._count.listings,
     phone: profile.phone ?? profile.user.phone,
     contactName: profile.user.fullName,
-    reviews: profile.reviews.map((r) => ({
+    reviews: profile.reviews.map((r): DealerReviewDto => ({
       id: r.id,
       rating: r.rating,
       comment: r.comment,

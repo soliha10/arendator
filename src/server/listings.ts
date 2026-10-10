@@ -328,6 +328,17 @@ export async function getListingsForCompare(
     .filter((d): d is ListingDetailDto => d !== undefined)
 }
 
+/** Diler sahifasi: egasining faol e'lonlari, avval TOP/VIP */
+export async function getActiveListingsByOwner(ownerId: string): Promise<ListingCardDto[]> {
+  await expirePromotions()
+  const rows = await prisma.listing.findMany({
+    where: { ownerId, status: 'ACTIVE' },
+    select: LISTING_CARD_SELECT,
+    orderBy: [{ promotion: 'desc' }, { publishedAt: { sort: 'desc', nulls: 'last' } }],
+  })
+  return rows.map(toListingCardDto)
+}
+
 /** Bosh sahifa: avval TOP/VIP, keyin tanlangan va eng yangi e'lonlar */
 export async function getFeaturedListings(limit = 6): Promise<ListingCardDto[]> {
   await expirePromotions()

@@ -49,7 +49,7 @@ export function ShareButton({
         className,
       )}
     >
-      <Share2 className="size-[18px]" aria-hidden />
+      <Share2 className="size-4.5" aria-hidden />
       {withLabel ? <span>{t.label}</span> : null}
     </button>
   )

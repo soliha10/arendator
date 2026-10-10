@@ -112,7 +112,7 @@ export default async function ModerationPage() {
 
           {l.plans.length > 0 ? (
             <div className="mt-4 overflow-x-auto rounded-xl border border-border">
-              <table className="w-full min-w-[560px] text-[13px]">
+              <table className="w-full min-w-140 text-[13px]">
                 <thead className="bg-surface-2 text-left text-[12px] uppercase tracking-wide text-subtle">
                   <tr>
                     <th className="px-3 py-2 font-semibold">{t.cols.plan}</th>

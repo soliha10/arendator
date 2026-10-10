@@ -484,7 +484,7 @@ export default async function ListingPage(props: PageProps<'/[lang]/elon/[slug]'
                 </div>
               </div>
               {!isOwner ? (
-                <div className="grid shrink-0 grid-cols-2 gap-2 sm:w-[340px]">
+                <div className="grid shrink-0 grid-cols-2 gap-2 sm:w-85">
                   <CallButton listingId={l.id} className="h-11" />
                   {telegram ? (
                     <a

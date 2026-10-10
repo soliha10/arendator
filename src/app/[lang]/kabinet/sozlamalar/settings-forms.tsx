@@ -63,7 +63,7 @@ export function ProfileForm({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <User className="size-[18px] text-primary" /> {t.personal}
+          <User className="size-4.5 text-primary" /> {t.personal}
         </CardTitle>
         <CardDescription>{t.personalHint}</CardDescription>
       </CardHeader>
@@ -139,7 +139,7 @@ export function ArendatorProfileForm({
     <Card id="arendator">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Building2 className="size-[18px] text-primary" />
+          <Building2 className="size-4.5 text-primary" />
           {isNew ? t.becomeDealer : t.company}
         </CardTitle>
         <CardDescription>
@@ -271,7 +271,7 @@ export function PasswordForm() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <KeyRound className="size-[18px] text-primary" /> {t.password}
+          <KeyRound className="size-4.5 text-primary" /> {t.password}
         </CardTitle>
         <CardDescription>
           {t.passwordHint}

@@ -73,7 +73,7 @@ export function BottomNav() {
                 )}
               >
                 <item.icon
-                  className="size-[22px]"
+                  className="size-5.5"
                   strokeWidth={active ? 2.4 : 1.8}
                   aria-hidden
                 />

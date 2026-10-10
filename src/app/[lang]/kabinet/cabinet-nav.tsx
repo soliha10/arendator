@@ -83,7 +83,7 @@ export function CabinetNav({ role, counts }: { role: Role; counts: CabinetNavCou
                 : 'text-muted hover:bg-surface-2 hover:text-text max-lg:border max-lg:border-border max-lg:bg-surface',
             )}
           >
-            <item.icon className="size-[18px]" aria-hidden />
+            <item.icon className="size-4.5" aria-hidden />
             {item.label}
             {item.count ? (
               <span

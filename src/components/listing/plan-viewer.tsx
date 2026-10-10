@@ -57,7 +57,7 @@ function YearBars({ plan }: { plan: PlanDto }) {
         return (
           <div
             key={y.index}
-            className="min-w-[240px] snap-start rounded-xl bg-surface-2 p-4 sm:min-w-0"
+            className="min-w-60 snap-start rounded-xl bg-surface-2 p-4 sm:min-w-0"
           >
             <div className="flex items-center justify-between gap-2">
               <p className="text-[16px] font-bold text-text">{fmt(t.year, { n: y.index })}</p>

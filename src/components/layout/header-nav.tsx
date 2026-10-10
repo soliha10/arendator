@@ -41,7 +41,7 @@ function CountBadge({ count, tone = 'primary' }: { count: number; tone?: 'primar
   return (
     <span
       className={cn(
-        'tabular absolute -right-0.5 -top-0.5 flex min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-[18px] ring-2 ring-surface',
+        'tabular absolute -right-0.5 -top-0.5 flex min-w-4.5 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-[18px] ring-2 ring-surface',
         tone === 'danger' ? 'bg-danger text-white' : 'bg-primary text-primary-fg',
       )}
     >
@@ -54,7 +54,7 @@ export function SavedLink({ className }: { className?: string }) {
   const t = useMessages().common.nav
   return (
     <Link href="/kabinet/saqlanganlar" aria-label={t.saved} className={cn(iconLinkClass, className)}>
-      <Heart className="size-[19px]" />
+      <Heart className="size-4.75" />
     </Link>
   )
 }
@@ -67,7 +67,7 @@ export function NotificationBell({ count }: { count: number }) {
       aria-label={count > 0 ? t.notificationsUnread.replace('{n}', String(count)) : t.notifications}
       className={iconLinkClass}
     >
-      <Bell className="size-[19px]" />
+      <Bell className="size-4.75" />
       <CountBadge count={count} tone="danger" />
     </Link>
   )
@@ -82,7 +82,7 @@ export function CompareLink({ className }: { className?: string }) {
       aria-label={t.compare}
       className={cn(iconLinkClass, className)}
     >
-      <Scale className="size-[19px]" />
+      <Scale className="size-4.75" />
       {isReady ? <CountBadge count={count} /> : null}
     </Link>
   )
@@ -234,7 +234,7 @@ export function MobileNav({ user, unread = 0 }: { user: HeaderUser | null; unrea
         aria-label={t.menu}
         className="tap -mr-1.5 inline-flex items-center justify-center rounded-[10px] text-muted transition-colors hover:bg-surface-2 hover:text-text lg:hidden"
       >
-        <Menu className="size-[22px]" aria-hidden />
+        <Menu className="size-5.5" aria-hidden />
       </button>
 
       {open ? (
@@ -254,7 +254,7 @@ export function MobileNav({ user, unread = 0 }: { user: HeaderUser | null; unrea
                 className="tap inline-flex items-center justify-center rounded-lg text-muted hover:bg-surface-2"
                 aria-label={t.close}
               >
-                <X className="size-[22px]" aria-hidden />
+                <X className="size-5.5" aria-hidden />
               </button>
             </div>
 
@@ -299,23 +299,23 @@ export function MobileNav({ user, unread = 0 }: { user: HeaderUser | null; unrea
               {user ? (
                 <div className="space-y-1">
                   <Link href="/kabinet" className="flex min-h-12 items-center gap-2.5 rounded-[10px] px-3 text-[15px] text-text hover:bg-surface-2">
-                    <LayoutGrid className="size-[18px] text-subtle" /> {u.cabinet}
+                    <LayoutGrid className="size-4.5 text-subtle" /> {u.cabinet}
                   </Link>
                   <Link href="/kabinet/saqlanganlar" className="flex min-h-12 items-center gap-2.5 rounded-[10px] px-3 text-[15px] text-text hover:bg-surface-2">
-                    <Heart className="size-[18px] text-subtle" /> {u.saved}
+                    <Heart className="size-4.5 text-subtle" /> {u.saved}
                   </Link>
                   <Link href="/kabinet/xabarnomalar" className="flex min-h-12 items-center gap-2.5 rounded-[10px] px-3 text-[15px] text-text hover:bg-surface-2">
-                    <Bell className="size-[18px] text-subtle" /> {u.notifications}
+                    <Bell className="size-4.5 text-subtle" /> {u.notifications}
                     {unread > 0 ? (
                       <span className="tabular ml-auto rounded-full bg-danger px-2 text-[11px] font-bold leading-5 text-white">{unread}</span>
                     ) : null}
                   </Link>
                   <Link href="/kabinet/sozlamalar" className="flex min-h-12 items-center gap-2.5 rounded-[10px] px-3 text-[15px] text-text hover:bg-surface-2">
-                    <Settings className="size-[18px] text-subtle" /> {u.settings}
+                    <Settings className="size-4.5 text-subtle" /> {u.settings}
                   </Link>
                   {user.role === 'ADMIN' ? (
                     <Link href="/admin" className="flex min-h-12 items-center gap-2.5 rounded-[10px] px-3 text-[15px] text-text hover:bg-surface-2">
-                      <ShieldCheck className="size-[18px] text-subtle" /> {u.admin}
+                      <ShieldCheck className="size-4.5 text-subtle" /> {u.admin}
                     </Link>
                   ) : null}
                   <form action={logoutAction}>
@@ -323,7 +323,7 @@ export function MobileNav({ user, unread = 0 }: { user: HeaderUser | null; unrea
                       type="submit"
                       className="flex min-h-12 w-full items-center gap-2.5 rounded-[10px] px-3 text-left text-[15px] text-danger hover:bg-surface-2"
                     >
-                      <LogOut className="size-[18px]" /> {u.logout}
+                      <LogOut className="size-4.5" /> {u.logout}
                     </button>
                   </form>
                 </div>

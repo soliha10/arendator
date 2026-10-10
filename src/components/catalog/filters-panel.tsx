@@ -449,7 +449,7 @@ export function FiltersDrawer({
                 className="tap inline-flex items-center justify-center rounded-lg text-muted hover:bg-surface-2"
                 aria-label={t.close}
               >
-                <X className="size-[22px]" aria-hidden />
+                <X className="size-5.5" aria-hidden />
               </button>
             </div>
             <div className="scroll-contain flex-1 overflow-y-auto px-4">
