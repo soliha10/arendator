@@ -34,8 +34,14 @@ export function DialogContent({
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out" />
       <DialogPrimitive.Content
         className={cn(
-          'fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2',
-          'card surface-shadow max-h-[90vh] overflow-y-auto p-5',
+          // Telefon: pastdan chiqadigan varaq — barmoq yetadigan zonada.
+          // sm dan boshlab odatdagi markazlashgan oyna.
+          'scroll-contain fixed inset-x-0 bottom-0 z-50 max-h-[90dvh] overflow-y-auto',
+          'border-x-0 border-b-0 border-t border-border bg-surface surface-shadow',
+          'rounded-t-2xl p-5 pb-[calc(1.25rem+var(--safe-b))]',
+          'sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[calc(100vw-2rem)]',
+          'sm:-translate-x-1/2 sm:-translate-y-1/2 sm:pb-5',
+          'sm:rounded-[var(--radius-card)] sm:border-x sm:border-b sm:border-border',
           maxW,
           className,
         )}
@@ -52,10 +58,10 @@ export function DialogContent({
             ) : null}
           </div>
           <DialogPrimitive.Close
-            className="-mr-1 -mt-1 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-2 hover:text-text"
+            className="tap -mr-2 -mt-2 inline-flex items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-text"
             aria-label="Yopish"
           >
-            <X className="size-4" />
+            <X className="size-5" aria-hidden />
           </DialogPrimitive.Close>
         </div>
         {children}

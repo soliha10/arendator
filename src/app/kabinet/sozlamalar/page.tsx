@@ -26,7 +26,7 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-text">Sozlamalar</h1>
+        <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">Sozlamalar</h1>
         <p className="mt-1.5 text-sm text-muted">
           Profil, kompaniya maʼlumotlari va xavfsizlik
         </p>

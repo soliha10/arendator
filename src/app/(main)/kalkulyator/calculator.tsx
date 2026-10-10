@@ -74,7 +74,7 @@ export function Calc() {
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
       {/* Kiritish */}
-      <div className="card h-fit p-5 lg:sticky lg:top-20">
+      <div className="card h-fit p-4 sm:p-5 lg:sticky lg:top-[calc(var(--header-h)+1rem)]">
         <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-text">
           <Calculator className="size-[18px] text-primary" /> Parametrlar
         </h2>
@@ -117,7 +117,7 @@ export function Calc() {
                   type="button"
                   onClick={() => setDownPayment(String(Math.round((price * p) / 100)))}
                   className={cn(
-                    'rounded-full border px-2.5 py-1 text-[12px] transition-colors',
+                    'inline-flex min-h-9 items-center rounded-full border px-3 text-[12px] transition-colors',
                     Math.abs(downPercent - p) < 0.5
                       ? 'border-primary bg-primary-soft text-primary'
                       : 'border-border text-muted hover:border-border-strong',
@@ -137,7 +137,7 @@ export function Calc() {
                   type="button"
                   onClick={() => setTermMonths(String(t))}
                   className={cn(
-                    'rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors',
+                    'inline-flex min-h-9 min-w-11 items-center justify-center rounded-full border px-3.5 text-[12px] font-medium transition-colors',
                     term === t
                       ? 'border-primary bg-primary-soft text-primary'
                       : 'border-border text-muted hover:border-border-strong',
@@ -151,7 +151,7 @@ export function Calc() {
                 onChange={(e) => setTermMonths(e.target.value)}
                 inputMode="numeric"
                 aria-label="Muddat"
-                className="tabular h-9 w-20"
+                className="tabular h-11 w-20 lg:h-9"
               />
             </div>
           </Field>
@@ -224,7 +224,7 @@ export function Calc() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
               {[
                 { label: 'Oylik toʻlov', value: money(result.monthlyPayment), accent: true },
                 { label: 'Jami toʻlov', value: money(result.totalPayable) },
@@ -235,7 +235,7 @@ export function Calc() {
                     result.markupPercent > 0 ? formatPercent(result.markupPercent, 2) : '—',
                 },
               ].map((s) => (
-                <div key={s.label} className="card p-4">
+                <div key={s.label} className="card p-3.5 sm:p-4">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">
                     {s.label}
                   </p>
@@ -253,7 +253,7 @@ export function Calc() {
               ))}
             </div>
 
-            <div className="card p-5">
+            <div className="card p-4 sm:p-5">
               <dl className="grid gap-x-8 sm:grid-cols-2">
                 {[
                   ['Avtomobil narxi', money(price)],
@@ -304,7 +304,61 @@ export function Calc() {
                 </div>
               </div>
 
-              <div className="max-h-[540px] overflow-auto rounded-xl border border-border">
+              {/* Telefon: jadval oʻrniga qatorlar — gorizontal scroll kerak emas */}
+              <div className="scroll-contain max-h-[70dvh] space-y-2 overflow-y-auto sm:hidden">
+                {view === 'year'
+                  ? years.map((y) => (
+                      <div key={y.year} className="rounded-xl border border-border p-3.5">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="tabular text-[15px] font-semibold text-text">
+                            {y.year}
+                          </span>
+                          <span className="tabular text-[15px] font-semibold text-text">
+                            {money(y.total)}
+                          </span>
+                        </div>
+                        <p className="tabular mt-1 flex flex-wrap gap-x-3 text-[12px] text-subtle">
+                          <span>{y.months} oy</span>
+                          <span>
+                            Asosiy: <span className="text-muted">{money(y.principal)}</span>
+                          </span>
+                          <span>
+                            Ustama: <span className="text-warning">{money(y.markup)}</span>
+                          </span>
+                        </p>
+                      </div>
+                    ))
+                  : result.schedule.map((r) => (
+                      <div
+                        key={r.monthIndex}
+                        className="rounded-xl border border-border p-3.5"
+                      >
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="tabular text-[13px] text-muted">
+                            <span className="font-medium text-text">{r.monthIndex}-oy</span>
+                            {' · '}
+                            {formatDate(r.dueDate)}
+                          </span>
+                          <span className="tabular text-[15px] font-semibold text-text">
+                            {money(r.amount)}
+                          </span>
+                        </div>
+                        <p className="tabular mt-1 flex flex-wrap gap-x-3 text-[12px] text-subtle">
+                          <span>
+                            Asosiy: <span className="text-muted">{money(r.principal)}</span>
+                          </span>
+                          <span>
+                            Ustama: <span className="text-warning">{money(r.markup)}</span>
+                          </span>
+                          <span>
+                            Qoldiq: <span className="text-muted">{money(r.balanceAfter)}</span>
+                          </span>
+                        </p>
+                      </div>
+                    ))}
+              </div>
+
+              <div className="hidden max-h-[540px] overflow-auto rounded-xl border border-border sm:block">
                 <table className="w-full min-w-[520px] text-sm">
                   <thead className="sticky top-0 bg-surface-2">
                     <tr className="text-left text-[12px] uppercase tracking-wide text-subtle">

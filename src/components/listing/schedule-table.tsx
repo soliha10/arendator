@@ -126,52 +126,98 @@ export function ScheduleTable({
       </div>
 
       {mode === 'year' ? (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full min-w-[520px] text-sm">
-            <thead className="bg-surface-2 text-left">
-              <tr className="text-[12px] uppercase tracking-wide text-subtle">
-                <th className="px-4 py-2.5 font-semibold">Yil</th>
-                <th className="px-4 py-2.5 font-semibold">Oylar</th>
-                <th className="px-4 py-2.5 text-right font-semibold">Jami toʻlov</th>
-                <th className="px-4 py-2.5 text-right font-semibold">Asosiy qarz</th>
-                <th className="px-4 py-2.5 text-right font-semibold">Ustama</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {groups.map((g) => (
-                <tr key={g.year} className="hover:bg-surface-2/60">
-                  <td className="tabular px-4 py-3 font-semibold text-text">{g.year}</td>
-                  <td className="tabular px-4 py-3 text-muted">{g.rows.length} oy</td>
-                  <td className="tabular px-4 py-3 text-right font-semibold text-text">
-                    {money(g.total)}
+        <>
+          {/* Telefon: jadval oʻrniga kartalar — gorizontal scroll kerak emas */}
+          <div className="space-y-2 sm:hidden">
+            {groups.map((g) => (
+              <div key={g.year} className="rounded-xl border border-border p-3.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="tabular text-[15px] font-semibold text-text">
+                    {g.year}
+                  </span>
+                  <span className="text-[13px] text-muted">{g.rows.length} oy</span>
+                </div>
+                <dl className="mt-2.5 space-y-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-[13px] text-muted">Jami toʻlov</dt>
+                    <dd className="tabular text-[14px] font-semibold text-text">
+                      {money(g.total)}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-[13px] text-muted">Asosiy qarz</dt>
+                    <dd className="tabular text-[13px] text-muted">{money(g.principal)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-[13px] text-muted">Ustama</dt>
+                    <dd className="tabular text-[13px] text-warning">{money(g.markup)}</dd>
+                  </div>
+                </dl>
+              </div>
+            ))}
+            <div className="rounded-xl bg-surface-2 p-3.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[14px] font-semibold text-text">Jami</span>
+                <span className="tabular text-[15px] font-bold text-text">
+                  {money(groups.reduce((s, g) => s + g.total, 0))}
+                </span>
+              </div>
+              <p className="tabular mt-1 text-[12px] text-muted">
+                shundan ustama{' '}
+                <span className="text-warning">
+                  {money(groups.reduce((s, g) => s + g.markup, 0))}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="hidden overflow-x-auto rounded-xl border border-border sm:block">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead className="bg-surface-2 text-left">
+                <tr className="text-[12px] uppercase tracking-wide text-subtle">
+                  <th className="px-4 py-2.5 font-semibold">Yil</th>
+                  <th className="px-4 py-2.5 font-semibold">Oylar</th>
+                  <th className="px-4 py-2.5 text-right font-semibold">Jami toʻlov</th>
+                  <th className="px-4 py-2.5 text-right font-semibold">Asosiy qarz</th>
+                  <th className="px-4 py-2.5 text-right font-semibold">Ustama</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {groups.map((g) => (
+                  <tr key={g.year} className="hover:bg-surface-2/60">
+                    <td className="tabular px-4 py-3 font-semibold text-text">{g.year}</td>
+                    <td className="tabular px-4 py-3 text-muted">{g.rows.length} oy</td>
+                    <td className="tabular px-4 py-3 text-right font-semibold text-text">
+                      {money(g.total)}
+                    </td>
+                    <td className="tabular px-4 py-3 text-right text-muted">
+                      {money(g.principal)}
+                    </td>
+                    <td className="tabular px-4 py-3 text-right text-warning">
+                      {money(g.markup)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="border-t-2 border-border bg-surface-2">
+                <tr className="text-sm font-semibold text-text">
+                  <td className="px-4 py-3" colSpan={2}>
+                    Jami
                   </td>
-                  <td className="tabular px-4 py-3 text-right text-muted">
-                    {money(g.principal)}
+                  <td className="tabular px-4 py-3 text-right">
+                    {money(groups.reduce((s, g) => s + g.total, 0))}
+                  </td>
+                  <td className="tabular px-4 py-3 text-right">
+                    {money(groups.reduce((s, g) => s + g.principal, 0))}
                   </td>
                   <td className="tabular px-4 py-3 text-right text-warning">
-                    {money(g.markup)}
+                    {money(groups.reduce((s, g) => s + g.markup, 0))}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot className="border-t-2 border-border bg-surface-2">
-              <tr className="text-sm font-semibold text-text">
-                <td className="px-4 py-3" colSpan={2}>
-                  Jami
-                </td>
-                <td className="tabular px-4 py-3 text-right">
-                  {money(groups.reduce((s, g) => s + g.total, 0))}
-                </td>
-                <td className="tabular px-4 py-3 text-right">
-                  {money(groups.reduce((s, g) => s + g.principal, 0))}
-                </td>
-                <td className="tabular px-4 py-3 text-right text-warning">
-                  {money(groups.reduce((s, g) => s + g.markup, 0))}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+              </tfoot>
+            </table>
+          </div>
+        </>
       ) : (
         <div className="space-y-2">
           {groups.map((g) => {
@@ -208,44 +254,77 @@ export function ScheduleTable({
                 </button>
 
                 {open ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[560px] text-sm">
-                      <thead>
-                        <tr className="border-b border-border text-[12px] uppercase tracking-wide text-subtle">
-                          <th className="px-4 py-2 text-left font-semibold">№</th>
-                          <th className="px-4 py-2 text-left font-semibold">Sana</th>
-                          <th className="px-4 py-2 text-right font-semibold">Toʻlov</th>
-                          <th className="px-4 py-2 text-right font-semibold">Asosiy</th>
-                          <th className="px-4 py-2 text-right font-semibold">Ustama</th>
-                          <th className="px-4 py-2 text-right font-semibold">Qoldiq</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {g.rows.map((row) => (
-                          <tr key={row.monthIndex} className="hover:bg-surface-2/60">
-                            <td className="tabular px-4 py-2.5 text-subtle">
-                              {row.monthIndex}
-                            </td>
-                            <td className="tabular px-4 py-2.5 text-muted">
+                  <>
+                    {/* Telefon: har oy — alohida qator, jadvalsiz */}
+                    <ul className="divide-y divide-border sm:hidden">
+                      {g.rows.map((row) => (
+                        <li key={row.monthIndex} className="px-3.5 py-3">
+                          <div className="flex items-baseline justify-between gap-3">
+                            <span className="tabular text-[13px] text-muted">
+                              <span className="font-medium text-text">
+                                {row.monthIndex}-oy
+                              </span>
+                              {' · '}
                               {formatDate(row.dueDate)}
-                            </td>
-                            <td className="tabular px-4 py-2.5 text-right font-medium text-text">
+                            </span>
+                            <span className="tabular text-[15px] font-semibold text-text">
                               {money(row.amount)}
-                            </td>
-                            <td className="tabular px-4 py-2.5 text-right text-muted">
-                              {money(row.principal)}
-                            </td>
-                            <td className="tabular px-4 py-2.5 text-right text-warning">
-                              {money(row.markup)}
-                            </td>
-                            <td className="tabular px-4 py-2.5 text-right text-subtle">
-                              {money(row.balanceAfter)}
-                            </td>
+                            </span>
+                          </div>
+                          <div className="tabular mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12px] text-subtle">
+                            <span>
+                              Asosiy: <span className="text-muted">{money(row.principal)}</span>
+                            </span>
+                            <span>
+                              Ustama: <span className="text-warning">{money(row.markup)}</span>
+                            </span>
+                            <span>
+                              Qoldiq: <span className="text-muted">{money(row.balanceAfter)}</span>
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="hidden overflow-x-auto sm:block">
+                      <table className="w-full min-w-[560px] text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-[12px] uppercase tracking-wide text-subtle">
+                            <th className="px-4 py-2 text-left font-semibold">№</th>
+                            <th className="px-4 py-2 text-left font-semibold">Sana</th>
+                            <th className="px-4 py-2 text-right font-semibold">Toʻlov</th>
+                            <th className="px-4 py-2 text-right font-semibold">Asosiy</th>
+                            <th className="px-4 py-2 text-right font-semibold">Ustama</th>
+                            <th className="px-4 py-2 text-right font-semibold">Qoldiq</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {g.rows.map((row) => (
+                            <tr key={row.monthIndex} className="hover:bg-surface-2/60">
+                              <td className="tabular px-4 py-2.5 text-subtle">
+                                {row.monthIndex}
+                              </td>
+                              <td className="tabular px-4 py-2.5 text-muted">
+                                {formatDate(row.dueDate)}
+                              </td>
+                              <td className="tabular px-4 py-2.5 text-right font-medium text-text">
+                                {money(row.amount)}
+                              </td>
+                              <td className="tabular px-4 py-2.5 text-right text-muted">
+                                {money(row.principal)}
+                              </td>
+                              <td className="tabular px-4 py-2.5 text-right text-warning">
+                                {money(row.markup)}
+                              </td>
+                              <td className="tabular px-4 py-2.5 text-right text-subtle">
+                                {money(row.balanceAfter)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 ) : null}
               </div>
             )

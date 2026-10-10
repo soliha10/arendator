@@ -10,9 +10,9 @@ export const metadata: Metadata = {
 
 export default function CalculatorPage() {
   return (
-    <div className="container-page py-6 lg:py-8">
+    <div className="container-page py-4 sm:py-6 lg:py-8">
       <div className="mb-6 max-w-2xl">
-        <h1 className="text-2xl font-bold tracking-tight text-text">
+        <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">
           Rassrochka kalkulyatori
         </h1>
         <p className="mt-1.5 text-sm leading-relaxed text-muted">

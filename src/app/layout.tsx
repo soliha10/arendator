@@ -36,6 +36,9 @@ export const viewport: Viewport = {
   ],
   width: 'device-width',
   initialScale: 1,
+  // Notch'li telefonlarda sahifa ekranning chetigacha choziladi —
+  // xavfsiz zonalarni env(safe-area-inset-*) orqali oʻzimiz boshqaramiz.
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

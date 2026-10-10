@@ -169,9 +169,9 @@ export function MobileNav({ user }: { user: HeaderUser | null }) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Menyu"
-        className="inline-flex size-9 items-center justify-center rounded-[10px] text-muted transition-colors hover:bg-surface-2 hover:text-text md:hidden"
+        className="tap -mr-1.5 inline-flex items-center justify-center rounded-[10px] text-muted transition-colors hover:bg-surface-2 hover:text-text md:hidden"
       >
-        <Menu className="size-5" />
+        <Menu className="size-[22px]" aria-hidden />
       </button>
 
       {open ? (
@@ -182,33 +182,33 @@ export function MobileNav({ user }: { user: HeaderUser | null }) {
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           />
-          <div className="absolute inset-y-0 right-0 flex w-[85%] max-w-sm flex-col border-l border-border bg-surface">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <span className="text-sm font-semibold text-text">Menyu</span>
+          <div className="absolute inset-y-0 right-0 flex w-[88%] max-w-sm flex-col border-l border-border bg-surface pt-safe">
+            <div className="flex items-center justify-between border-b border-border py-2 pl-4 pr-2">
+              <span className="text-[15px] font-semibold text-text">Menyu</span>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-1.5 text-muted hover:bg-surface-2"
+                className="tap inline-flex items-center justify-center rounded-lg text-muted hover:bg-surface-2"
                 aria-label="Yopish"
               >
-                <X className="size-5" />
+                <X className="size-[22px]" aria-hidden />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="scroll-contain flex-1 overflow-y-auto p-4">
               <div className="space-y-1">
                 {NAV_LINKS.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="block rounded-[10px] px-3 py-2.5 text-[15px] font-medium text-text hover:bg-surface-2"
+                    className="flex min-h-12 items-center rounded-[10px] px-3 text-[15px] font-medium text-text hover:bg-surface-2"
                   >
                     {link.label}
                   </Link>
                 ))}
                 <Link
                   href="/taqqoslash"
-                  className="block rounded-[10px] px-3 py-2.5 text-[15px] font-medium text-text hover:bg-surface-2"
+                  className="flex min-h-12 items-center rounded-[10px] px-3 text-[15px] font-medium text-text hover:bg-surface-2"
                 >
                   Taqqoslash
                 </Link>
@@ -218,24 +218,24 @@ export function MobileNav({ user }: { user: HeaderUser | null }) {
 
               {user ? (
                 <div className="space-y-1">
-                  <Link href="/kabinet" className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[15px] text-text hover:bg-surface-2">
+                  <Link href="/kabinet" className="flex min-h-12 items-center gap-2.5 rounded-[10px] px-3 text-[15px] text-text hover:bg-surface-2">
                     <LayoutGrid className="size-[18px] text-subtle" /> Kabinet
                   </Link>
-                  <Link href="/kabinet/saqlanganlar" className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[15px] text-text hover:bg-surface-2">
+                  <Link href="/kabinet/saqlanganlar" className="flex min-h-12 items-center gap-2.5 rounded-[10px] px-3 text-[15px] text-text hover:bg-surface-2">
                     <Heart className="size-[18px] text-subtle" /> Saqlanganlar
                   </Link>
-                  <Link href="/kabinet/sozlamalar" className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[15px] text-text hover:bg-surface-2">
+                  <Link href="/kabinet/sozlamalar" className="flex min-h-12 items-center gap-2.5 rounded-[10px] px-3 text-[15px] text-text hover:bg-surface-2">
                     <Settings className="size-[18px] text-subtle" /> Sozlamalar
                   </Link>
                   {user.role === 'ADMIN' ? (
-                    <Link href="/admin" className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[15px] text-text hover:bg-surface-2">
+                    <Link href="/admin" className="flex min-h-12 items-center gap-2.5 rounded-[10px] px-3 text-[15px] text-text hover:bg-surface-2">
                       <ShieldCheck className="size-[18px] text-subtle" /> Admin panel
                     </Link>
                   ) : null}
                   <form action={logoutAction}>
                     <button
                       type="submit"
-                      className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left text-[15px] text-danger hover:bg-surface-2"
+                      className="flex min-h-12 w-full items-center gap-2.5 rounded-[10px] px-3 text-left text-[15px] text-danger hover:bg-surface-2"
                     >
                       <LogOut className="size-[18px]" /> Chiqish
                     </button>
@@ -255,7 +255,7 @@ export function MobileNav({ user }: { user: HeaderUser | null }) {
               )}
             </div>
 
-            <div className="border-t border-border p-4">
+            <div className="border-t border-border p-4 pb-[calc(1rem+var(--safe-b))]">
               <Button asChild block size="lg">
                 <Link href="/kabinet/elon/yangi">
                   <Plus /> Eʼlon joylash

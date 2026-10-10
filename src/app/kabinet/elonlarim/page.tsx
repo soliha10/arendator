@@ -72,12 +72,12 @@ export default async function MyListingsPage(props: PageProps<'/kabinet/elonlari
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text">Eʼlonlarim</h1>
+          <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">Eʼlonlarim</h1>
           <p className="mt-1.5 text-sm text-muted">
             Jami <span className="tabular font-medium text-text">{totalCount}</span> ta eʼlon
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="hidden sm:inline-flex">
           <Link href="/kabinet/elon/yangi">
             <Plus /> Eʼlon joylash
           </Link>
@@ -99,7 +99,7 @@ export default async function MyListingsPage(props: PageProps<'/kabinet/elonlari
                   : `/kabinet/elonlarim?status=${tab.value}`
               }
               className={cn(
-                'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors',
+                'inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-medium transition-colors',
                 active
                   ? 'border-primary bg-primary-soft text-primary'
                   : 'border-border text-muted hover:border-border-strong hover:text-text',
@@ -116,10 +116,10 @@ export default async function MyListingsPage(props: PageProps<'/kabinet/elonlari
         <ul className="space-y-3">
           {listings.map((l) => (
             <li key={l.id} className="card p-3.5">
-              <div className="flex gap-4">
+              <div className="flex gap-3 sm:gap-4">
                 <Link
                   href={`/elon/${l.slug}`}
-                  className="relative aspect-[16/10] w-32 shrink-0 overflow-hidden rounded-lg bg-surface-2 sm:w-40"
+                  className="relative aspect-[16/10] w-24 shrink-0 overflow-hidden rounded-lg bg-surface-2 sm:w-40"
                 >
                   {l.images[0] ? (
                     <Image
@@ -137,7 +137,7 @@ export default async function MyListingsPage(props: PageProps<'/kabinet/elonlari
                     <div className="min-w-0">
                       <Link
                         href={`/elon/${l.slug}`}
-                        className="line-clamp-1x font-semibold text-text hover:text-primary"
+                        className="line-clamp-2x text-[15px] font-semibold leading-snug text-text hover:text-primary sm:line-clamp-1x sm:text-base"
                       >
                         {l.title}
                       </Link>

@@ -5,7 +5,7 @@ export function Logo({ className, compact = false }: { className?: string; compa
   return (
     <Link
       href="/"
-      className={cn('group inline-flex items-center gap-2.5', className)}
+      className={cn('group inline-flex shrink-0 items-center gap-2.5', className)}
       aria-label="Arendator — bosh sahifa"
     >
       <span className="relative flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-primary text-primary-fg">
@@ -22,8 +22,10 @@ export function Logo({ className, compact = false }: { className?: string; compa
       </span>
       {!compact ? (
         <span className="flex flex-col leading-none">
-          <span className="text-[17px] font-bold tracking-tight text-text">Arendator</span>
-          <span className="mt-0.5 text-[11px] font-medium text-subtle">
+          <span className="whitespace-nowrap text-[17px] font-bold tracking-tight text-text">
+            Arendator
+          </span>
+          <span className="mt-0.5 whitespace-nowrap text-[11px] font-medium text-subtle">
             avtomobil rassrochkasi
           </span>
         </span>

@@ -17,6 +17,8 @@ import { Gallery } from '@/components/listing/gallery'
 import { PlanViewer } from '@/components/listing/plan-viewer'
 import { LeadForm } from '@/components/listing/lead-form'
 import { CompareButton, FavoriteButton } from '@/components/listing/listing-actions'
+import { PriceCard } from '@/components/listing/price-card'
+import { MobileCta } from '@/components/listing/mobile-cta'
 import { ListingGrid } from '@/components/listing/listing-grid'
 import { Badge } from '@/components/ui/badge'
 
@@ -102,8 +104,17 @@ export default async function ListingPage(props: PageProps<'/elon/[slug]'>) {
     { key: 'seats', label: 'Oʻrindiqlar', value: listing.seats ? `${listing.seats} ta` : '—' },
   ] as const
 
+  const priceCardProps = {
+    monthlyUzs: listing.minMonthlyPaymentUzs,
+    downUzs: listing.minDownPaymentUzs,
+    carPriceUzs: listing.carPriceUzs,
+    minTermMonths: listing.minTermMonths,
+    maxTermMonths: listing.maxTermMonths,
+    planCount: listing.plans.length,
+  }
+
   return (
-    <div className="container-page py-6">
+    <div className="container-page py-4 pb-[calc(4.5rem+var(--safe-b))] sm:py-6 lg:pb-6">
       {/* Non */}
       <nav className="mb-4 flex flex-wrap items-center gap-1.5 text-[13px] text-muted">
         <Link href="/" className="hover:text-text">Bosh sahifa</Link>
@@ -127,9 +138,9 @@ export default async function ListingPage(props: PageProps<'/elon/[slug]'>) {
         {/* ── Chap ustun ─────────────────────────────────── */}
         <div className="min-w-0 space-y-6">
           <div>
-            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+            <div className="mb-3">
               <div className="min-w-0">
-                <h1 className="text-2xl font-bold tracking-tight text-text">
+                <h1 className="text-[22px] font-bold leading-tight tracking-tight text-text sm:text-2xl">
                   {listing.title}
                 </h1>
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-muted">
@@ -150,11 +161,12 @@ export default async function ListingPage(props: PageProps<'/elon/[slug]'>) {
                 </div>
               </div>
 
-              <div className="flex shrink-0 gap-2">
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:justify-end">
                 <FavoriteButton
                   listingId={listing.id}
                   initialFavorited={favorited}
                   withLabel
+                  className="w-full sm:w-auto"
                 />
                 <CompareButton
                   item={{
@@ -164,6 +176,7 @@ export default async function ListingPage(props: PageProps<'/elon/[slug]'>) {
                     imageUrl: listing.images[0]?.url ?? null,
                   }}
                   withLabel
+                  className="w-full sm:w-auto"
                 />
               </div>
             </div>
@@ -178,6 +191,9 @@ export default async function ListingPage(props: PageProps<'/elon/[slug]'>) {
             </div>
 
             <Gallery images={listing.images} title={listing.title} />
+
+            {/* Telefonda asosiy raqamlar darhol koʻrinadi */}
+            <PriceCard {...priceCardProps} className="mt-4 lg:hidden" />
           </div>
 
           {/* Xususiyatlar */}
@@ -219,51 +235,9 @@ export default async function ListingPage(props: PageProps<'/elon/[slug]'>) {
         </div>
 
         {/* ── O'ng ustun (yopishqoq) ─────────────────────── */}
-        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-          {/* Asosiy narx kartasi */}
-          <div className="card overflow-hidden">
-            <div className="bg-primary-soft px-5 py-4">
-              <p className="text-[12px] font-medium uppercase tracking-wide text-primary/80">
-                Oyiga
-              </p>
-              <p className="tabular mt-1 text-3xl font-bold leading-none text-primary">
-                {listing.minMonthlyPaymentUzs
-                  ? formatMoney(listing.minMonthlyPaymentUzs, 'UZS')
-                  : '—'}
-              </p>
-              <p className="mt-2 text-[13px] text-primary/80">
-                {listing.minTermMonths && listing.maxTermMonths
-                  ? `${listing.minTermMonths}–${listing.maxTermMonths} oy muddatga`
-                  : 'Shartlar quyida'}
-              </p>
-            </div>
-            <dl className="divide-y divide-border px-5">
-              <div className="flex items-center justify-between py-3">
-                <dt className="text-[13px] text-muted">Boshlangʻich toʻlov</dt>
-                <dd className="tabular text-[14px] font-semibold text-text">
-                  {listing.minDownPaymentUzs !== null
-                    ? formatMoney(listing.minDownPaymentUzs, 'UZS')
-                    : '—'}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between py-3">
-                <dt className="text-[13px] text-muted">Avtomobil narxi</dt>
-                <dd className="tabular text-[14px] font-semibold text-text">
-                  {listing.carPriceUzs !== null
-                    ? formatMoney(listing.carPriceUzs, 'UZS')
-                    : '—'}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between py-3">
-                <dt className="text-[13px] text-muted">Shartlar soni</dt>
-                <dd className="text-[14px] font-semibold text-text">
-                  <a href="#shartlar" className="text-primary hover:underline">
-                    {listing.plans.length} ta variant
-                  </a>
-                </dd>
-              </div>
-            </dl>
-          </div>
+        <aside className="space-y-4 lg:sticky lg:top-[calc(var(--header-h)+1rem)] lg:self-start">
+          {/* Asosiy narx kartasi — kengroq ekranda */}
+          <PriceCard {...priceCardProps} className="hidden lg:block" />
 
           {/* Arendator */}
           <div className="card p-5">
@@ -306,13 +280,15 @@ export default async function ListingPage(props: PageProps<'/elon/[slug]'>) {
 
           {/* Ariza formasi */}
           {!isOwner ? (
-            <LeadForm
-              listingId={listing.id}
-              plans={listing.plans}
-              contactPhone={listing.contactPhone}
-              defaultName={user?.fullName ?? ''}
-              defaultPhone={user?.phone ?? ''}
-            />
+            <div id="ariza" className="scroll-offset">
+              <LeadForm
+                listingId={listing.id}
+                plans={listing.plans}
+                contactPhone={listing.contactPhone}
+                defaultName={user?.fullName ?? ''}
+                defaultPhone={user?.phone ?? ''}
+              />
+            </div>
           ) : (
             <div className="card p-5 text-center">
               <p className="text-sm text-muted">Bu sizning eʼloningiz</p>
@@ -331,6 +307,13 @@ export default async function ListingPage(props: PageProps<'/elon/[slug]'>) {
           </p>
         </aside>
       </div>
+
+      {!isOwner ? (
+        <MobileCta
+          monthlyUzs={listing.minMonthlyPaymentUzs}
+          contactPhone={listing.contactPhone}
+        />
+      ) : null}
 
       {/* O'xshash e'lonlar */}
       {similar.length > 0 ? (

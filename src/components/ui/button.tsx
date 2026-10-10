@@ -20,12 +20,14 @@ const buttonVariants = cva(
         danger: 'bg-danger text-white hover:brightness-110',
         link: 'text-primary underline-offset-4 hover:underline',
       },
+      // Mobilda har bir oʻlcham bir pogʻona kattaroq: barmoq uchun
+      // 44px atrofidagi nishon kerak, sichqoncha uchun esa ixchamroq.
       size: {
-        sm: 'h-8 px-3 text-[13px] [&_svg]:size-4',
-        md: 'h-10 px-4 text-sm [&_svg]:size-4',
+        sm: 'h-9 px-3 text-[13px] [&_svg]:size-4 lg:h-8',
+        md: 'h-11 px-4 text-sm [&_svg]:size-4 lg:h-10',
         lg: 'h-12 px-6 text-[15px] [&_svg]:size-5',
-        icon: 'h-10 w-10 [&_svg]:size-4',
-        'icon-sm': 'h-8 w-8 [&_svg]:size-4',
+        icon: 'size-11 [&_svg]:size-4 lg:size-10',
+        'icon-sm': 'size-9 [&_svg]:size-4 lg:size-8',
       },
       block: { true: 'w-full', false: '' },
     },

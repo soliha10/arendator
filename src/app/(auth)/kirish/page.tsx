@@ -18,7 +18,7 @@ export default async function LoginPage(props: PageProps<'/kirish'>) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-text">Hisobga kirish</h1>
+      <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">Hisobga kirish</h1>
       <p className="mt-2 text-sm text-muted">
         Hisobingiz yoʻqmi?{' '}
         <Link href="/royxatdan-otish" className="font-medium text-primary hover:underline">

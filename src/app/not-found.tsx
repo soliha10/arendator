@@ -6,10 +6,10 @@ import { Logo } from '@/components/layout/logo'
 export default function NotFound() {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="p-5">
+      <header className="p-4 sm:p-5">
         <Logo />
       </header>
-      <main className="flex flex-1 items-center justify-center px-5 py-12">
+      <main className="flex flex-1 items-center justify-center px-4 py-10 sm:px-5 sm:py-12">
         <div className="text-center">
           <p className="tabular text-[80px] font-bold leading-none text-surface-3">404</p>
           <h1 className="mt-3 text-2xl font-bold tracking-tight text-text">
@@ -19,7 +19,7 @@ export default function NotFound() {
             Siz izlagan sahifa oʻchirilgan yoki manzil notoʻgʻri kiritilgan boʻlishi
             mumkin. Eʼlon esa arxivlangan boʻlishi ham mumkin.
           </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <div className="mt-6 grid gap-2.5 sm:flex sm:flex-wrap sm:justify-center sm:gap-3">
             <Button asChild>
               <Link href="/">
                 <Home /> Bosh sahifa

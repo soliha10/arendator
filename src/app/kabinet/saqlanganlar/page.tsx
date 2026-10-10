@@ -25,7 +25,7 @@ export default async function FavoritesPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-text">Saqlanganlar</h1>
+        <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">Saqlanganlar</h1>
         <p className="mt-1.5 text-sm text-muted">
           <span className="tabular font-medium text-text">{listings.length}</span> ta eʼlon
         </p>

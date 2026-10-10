@@ -374,21 +374,23 @@ export function CompareTable() {
   }
 
   const columnWidth = `${Math.floor(100 / Math.max(1, listings.length))}%`
+  // Telefonda 200px lik sarlavha ustuni ekranning yarmini yeb qoʻyardi
+  const labelColClass = 'w-[108px] min-w-[108px] sm:w-[200px] sm:min-w-[200px]'
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <label className="flex cursor-pointer items-center gap-2.5 text-sm text-text">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <label className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm text-text lg:min-h-0">
           <input
             type="checkbox"
             checked={onlyDiff}
             onChange={(e) => setOnlyDiff(e.target.checked)}
-            className="size-4 accent-[var(--primary)]"
+            className="size-5 accent-[var(--primary)] lg:size-4"
           />
           Faqat farqlarni koʻrsatish
         </label>
 
-        <div className="flex items-center gap-1">
+        <div className="flex w-full items-center gap-1 sm:w-auto">
           <Button
             variant="ghost"
             size="sm"
@@ -437,21 +439,28 @@ export function CompareTable() {
         </p>
       ) : null}
 
-      <div className="overflow-x-auto rounded-[14px] border border-border">
-        <table
-          className="w-full table-fixed border-collapse bg-surface"
-          style={{ minWidth: `${200 + listings.length * 220}px` }}
-        >
+      {listings.length > 1 ? (
+        <p className="mb-2 text-[12px] text-subtle sm:hidden">
+          Jadvalni yon tomonga suring →
+        </p>
+      ) : null}
+
+      <div className="scroll-contain overflow-x-auto rounded-[14px] border border-border">
+        <table className="w-full table-fixed border-collapse bg-surface">
           <colgroup>
-            <col style={{ width: '200px' }} />
+            <col className={labelColClass} />
             {listings.map((l) => (
-              <col key={l.id} style={{ width: columnWidth }} />
+              <col
+                key={l.id}
+                className="w-[150px] min-w-[150px] sm:w-[200px] sm:min-w-[200px]"
+                style={{ width: columnWidth }}
+              />
             ))}
           </colgroup>
           {/* Sarlavha: avtomobillar */}
           <thead>
             <tr>
-              <th className="sticky left-0 z-10 border-b border-r border-border bg-surface p-3 text-left align-bottom">
+              <th className={cn(labelColClass, "sticky left-0 z-10 border-b border-r border-border bg-surface p-2.5 text-left align-bottom sm:p-3")}>
                 <span className="text-[12px] font-semibold uppercase tracking-wide text-subtle">
                   Koʻrsatkich
                 </span>
@@ -461,7 +470,7 @@ export function CompareTable() {
                 return (
                   <th
                     key={l.id}
-                    className="border-b border-r border-border p-3 text-left align-top last:border-r-0"
+                    className="border-b border-r border-border p-2.5 text-left align-top last:border-r-0 sm:p-3"
                   >
                     <div className="relative">
                       {!sharedIds ? (
@@ -523,7 +532,7 @@ export function CompareTable() {
                 <tr>
                   <td
                     colSpan={listings.length + 1}
-                    className="sticky left-0 border-y border-border bg-surface-2 px-3 py-2 text-[12px] font-semibold uppercase tracking-wide text-subtle"
+                    className="sticky left-0 border-y border-border bg-surface-2 px-2.5 py-2 text-[11px] font-semibold uppercase tracking-wide text-subtle sm:px-3 sm:text-[12px]"
                   >
                     {group}
                   </td>
@@ -534,14 +543,14 @@ export function CompareTable() {
                     const best = bestIds(row)
                     return (
                       <tr key={row.key} className="hover:bg-surface-2/40">
-                        <th className="sticky left-0 z-10 border-b border-r border-border bg-surface p-3 text-left text-[13px] font-medium text-muted">
+                        <th className={cn(labelColClass, "sticky left-0 z-10 border-b border-r border-border bg-surface p-2.5 text-left text-[12px] font-medium leading-snug text-muted sm:p-3 sm:text-[13px]")}>
                           {row.label}
                         </th>
                         {listings.map((l) => (
                           <td
                             key={l.id}
                             className={cn(
-                              'tabular border-b border-r border-border p-3 text-[13px] text-text last:border-r-0',
+                              'tabular border-b border-r border-border p-2.5 text-[12px] text-text last:border-r-0 sm:p-3 sm:text-[13px]',
                               best.has(l.id) && 'bg-success-soft font-semibold text-success',
                             )}
                           >
@@ -556,9 +565,9 @@ export function CompareTable() {
 
             {/* Amallar */}
             <tr>
-              <th className="sticky left-0 z-10 border-r border-border bg-surface p-3" />
+              <th className={cn(labelColClass, "sticky left-0 z-10 border-r border-border bg-surface p-2.5 sm:p-3")} />
               {listings.map((l) => (
-                <td key={l.id} className="border-r border-border p-3 last:border-r-0">
+                <td key={l.id} className="border-r border-border p-2.5 last:border-r-0 sm:p-3">
                   <Button asChild block size="sm">
                     <Link href={`/elon/${l.slug}`}>Batafsil</Link>
                   </Button>

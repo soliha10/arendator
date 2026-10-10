@@ -12,7 +12,7 @@ export default async function AdminLayout({ children }: LayoutProps<'/admin'>) {
       <div className="container-page flex-1 py-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-text">Admin panel</h1>
+            <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">Admin panel</h1>
             <p className="mt-1 text-sm text-muted">
               Moderatsiya, arendatorlar va tizim sozlamalari
             </p>

@@ -18,6 +18,24 @@ const arg = (name: string, fallback: string) =>
 const BASE = arg('base', 'http://localhost:3000')
 const OUT = path.resolve(arg('out', './shots'))
 
+/**
+ * Qurilma profillari. `hasTouch` yoqilganda Chrome sensorli kirishni
+ * emulyatsiya qiladi va `hover: none` / `pointer: coarse` media
+ * soʻrovlari ishga tushadi — sensorli uslublar ham tekshiriladi.
+ */
+const DEVICES = {
+  mobile: { width: 390, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
+  desktop: { width: 1440, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
+} as const
+
+type DeviceName = keyof typeof DEVICES
+
+const DEVICE_ARG = arg('device', 'both')
+const ACTIVE_DEVICES: DeviceName[] =
+  DEVICE_ARG === 'both' ? ['mobile', 'desktop'] : [DEVICE_ARG as DeviceName]
+
+const THEME_ARG = arg('theme', 'both')
+
 const CHROME_PATHS = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/Applications/Chromium.app/Contents/MacOS/Chromium',
@@ -106,12 +124,24 @@ async function main() {
     args: ['--no-sandbox', '--hide-scrollbars'],
   })
 
-  const themes = ['dark', 'light'] as const
+  const themes = (THEME_ARG === 'both' ? ['dark', 'light'] : [THEME_ARG]) as (
+    | 'dark'
+    | 'light'
+  )[]
 
-  for (const theme of themes) {
-    for (const shot of shots) {
+  for (const device of ACTIVE_DEVICES) {
+    const d = DEVICES[device]
+    for (const theme of themes) {
+      for (const shot of shots) {
       const page = await browser.newPage()
-      await page.setViewport({ width: 1440, height: shot.height ?? 1200, deviceScaleFactor: 1 })
+      await page.setViewport({
+        width: d.width,
+        // Telefonda sahifa balandroq choziladi
+        height: Math.round((shot.height ?? 1200) * (device === 'mobile' ? 1.35 : 1)),
+        deviceScaleFactor: d.deviceScaleFactor,
+        isMobile: d.isMobile,
+        hasTouch: d.hasTouch,
+      })
       await page.emulateMediaFeatures([
         { name: 'prefers-color-scheme', value: theme },
       ])
@@ -131,10 +161,11 @@ async function main() {
       await page.goto(target, { waitUntil: 'networkidle2', timeout: 45_000 })
       await new Promise((r) => setTimeout(r, shot.wait ?? 700))
 
-      const file = path.join(OUT, `${shot.name}-${theme}.png`)
+      const file = path.join(OUT, `${device}-${shot.name}-${theme}.png`)
       await page.screenshot({ path: file as `${string}.png` })
       console.log(`  ✓ ${path.basename(file)}`)
       await page.close()
+      }
     }
   }
 

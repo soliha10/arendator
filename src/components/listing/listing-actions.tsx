@@ -40,7 +40,7 @@ export function CompareButton({
       aria-pressed={active}
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-[10px] border transition-colors',
-        withLabel ? 'h-10 px-4 text-sm font-medium' : 'size-9',
+        withLabel ? 'h-11 px-4 text-sm font-medium' : 'size-10',
         active
           ? 'border-primary bg-primary text-primary-fg'
           : 'border-border bg-surface/90 text-muted backdrop-blur hover:text-text',
@@ -108,7 +108,7 @@ export function FavoriteButton({
       aria-pressed={favorited}
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-[10px] border transition-colors disabled:opacity-60',
-        withLabel ? 'h-10 px-4 text-sm font-medium' : 'size-9',
+        withLabel ? 'h-11 px-4 text-sm font-medium' : 'size-10',
         favorited
           ? 'border-danger/30 bg-danger-soft text-danger'
           : 'border-border bg-surface/90 text-muted backdrop-blur hover:text-text',

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function ComparePage() {
   return (
     <div className="container-page py-6 lg:py-8">
-      <h1 className="text-2xl font-bold tracking-tight text-text">Taqqoslash</h1>
+      <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">Taqqoslash</h1>
       <p className="mt-1.5 max-w-2xl text-sm text-muted">
         Har bir avtomobil uchun toʻlov shartini tanlang — jadval avtomatik
         yangilanadi va eng qulay qiymatlar ajratib koʻrsatiladi.

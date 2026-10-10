@@ -24,7 +24,7 @@ export function AdminNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              'inline-flex shrink-0 items-center gap-2 rounded-[10px] border px-3.5 py-2 text-sm font-medium transition-colors',
+              'inline-flex min-h-10 shrink-0 items-center gap-2 rounded-[10px] border px-3.5 text-sm font-medium transition-colors',
               active
                 ? 'border-primary bg-primary-soft text-primary'
                 : 'border-border text-muted hover:border-border-strong hover:text-text',

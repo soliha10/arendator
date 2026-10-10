@@ -20,9 +20,9 @@ export function DropdownContent({
     <DropdownPrimitive.Portal>
       <DropdownPrimitive.Content
         align={align}
-        sideOffset={6}
+        sideOffset={8}
         className={cn(
-          'z-50 min-w-48 overflow-hidden rounded-xl border border-border bg-surface p-1.5 surface-shadow',
+          'z-50 min-w-52 overflow-hidden rounded-xl border border-border bg-surface p-1.5 surface-shadow',
           className,
         )}
       >
@@ -40,7 +40,7 @@ export function DropdownItem({
   return (
     <DropdownPrimitive.Item
       className={cn(
-        'flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm outline-none transition-colors',
+        'flex min-h-11 cursor-pointer select-none items-center gap-2.5 rounded-lg px-2.5 text-sm outline-none transition-colors lg:min-h-0 lg:py-2',
         'data-[highlighted]:bg-surface-2 [&_svg]:size-4 [&_svg]:text-subtle',
         danger ? 'text-danger [&_svg]:text-danger' : 'text-text',
         className,

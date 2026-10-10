@@ -28,7 +28,56 @@ export default async function AdminUsersPage() {
         foydalanuvchi
       </p>
 
-      <div className="overflow-x-auto rounded-[14px] border border-border">
+      {/* Telefon: har bir foydalanuvchi — alohida karta */}
+      <ul className="space-y-2 md:hidden">
+        {users.map((u) => (
+          <li key={u.id} className="card p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate font-medium text-text">{u.fullName}</p>
+                <p className="tabular text-[12px] text-muted">{formatPhone(u.phone)}</p>
+                {u.email ? (
+                  <p className="truncate text-[12px] text-subtle">{u.email}</p>
+                ) : null}
+              </div>
+              <Badge variant={u.role === 'ADMIN' ? 'primary' : 'default'} size="sm">
+                {ROLE_LABELS[u.role]}
+              </Badge>
+            </div>
+
+            {u.isBlocked ? (
+              <Badge variant="danger" size="sm" className="mt-2">
+                Bloklangan
+              </Badge>
+            ) : null}
+
+            <dl className="tabular mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
+              <div className="flex gap-1">
+                <dt>Eʼlon:</dt>
+                <dd className="font-medium text-text">{u._count.listings}</dd>
+              </div>
+              <div className="flex gap-1">
+                <dt>Ariza:</dt>
+                <dd className="font-medium text-text">{u._count.leads}</dd>
+              </div>
+              <div className="flex gap-1">
+                <dt>Kirgan:</dt>
+                <dd>{u.lastLoginAt ? formatRelative(u.lastLoginAt) : '—'}</dd>
+              </div>
+            </dl>
+
+            <div className="mt-3 border-t border-border pt-3">
+              <BlockButton
+                userId={u.id}
+                isBlocked={u.isBlocked}
+                disabled={u.role === 'ADMIN' || u.id === admin?.id}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-[14px] border border-border md:block">
         <table className="w-full min-w-[840px] text-sm">
           <thead className="bg-surface-2 text-left text-[12px] uppercase tracking-wide text-subtle">
             <tr>

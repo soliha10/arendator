@@ -209,7 +209,7 @@ export function ListingForm({
   return (
     <div className="space-y-5">
       {/* Qadamlar */}
-      <nav className="card overflow-x-auto p-1.5">
+      <nav className="card hide-scrollbar overflow-x-auto p-1.5">
         <ol className="flex min-w-max items-center gap-1">
           {STEPS.map((s, i) => {
             const done = stepStatus[i]
@@ -261,8 +261,8 @@ export function ListingForm({
         </div>
       ) : null}
 
-      <div className="card p-5">
-        <h2 className="mb-5 flex items-center gap-2.5 text-lg font-semibold text-text">
+      <div className="card p-4 sm:p-5">
+        <h2 className="mb-5 flex items-center gap-2.5 text-[17px] font-semibold text-text sm:text-lg">
           <StepIcon className="size-5 text-primary" />
           {STEPS[step].label}
         </h2>
@@ -584,42 +584,58 @@ export function ListingForm({
       </div>
 
       {/* Pastki panel */}
-      <div className="sticky bottom-0 z-20 -mx-1 rounded-t-xl border-t border-border bg-surface/95 p-4 backdrop-blur-lg">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="sticky bottom-0 z-20 -mx-1 rounded-t-xl border-t border-border bg-surface/95 p-3 pb-[calc(0.75rem+var(--safe-b))] backdrop-blur-lg sm:p-4 sm:pb-4">
+        {/*
+          Telefonda uchta tugma bir qatorga sigʻmaydi — yordamchi
+          tugmalar faqat belgiga qisqaradi, asosiy amal esa keng qoladi.
+        */}
+        <div className="flex items-center gap-2">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             onClick={() => setStep((s) => Math.max(0, s - 1))}
             disabled={step === 0}
+            aria-label="Orqaga"
+            className="shrink-0 px-3 sm:px-4"
           >
-            <ArrowLeft /> Orqaga
+            <ArrowLeft />
+            <span className="hidden sm:inline">Orqaga</span>
           </Button>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => submit(false)}
+            loading={pending}
+            aria-label="Qoralama saqlash"
+            className="shrink-0 px-3 sm:px-4"
+          >
+            <Save />
+            <span className="hidden sm:inline">Qoralama saqlash</span>
+          </Button>
+
+          {step < STEPS.length - 1 ? (
             <Button
               type="button"
-              variant="outline"
-              onClick={() => submit(false)}
-              loading={pending}
+              onClick={() => setStep((s) => s + 1)}
+              className="ml-auto flex-1 sm:flex-none"
             >
-              <Save /> Qoralama saqlash
+              Keyingisi <ArrowRight />
             </Button>
-
-            {step < STEPS.length - 1 ? (
-              <Button type="button" onClick={() => setStep((s) => s + 1)}>
-                Keyingisi <ArrowRight />
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                onClick={() => submit(true)}
-                loading={pending}
-                disabled={!allValid}
-              >
-                <Send /> {isEdit ? 'Saqlash va chop etish' : 'Chop etishga yuborish'}
-              </Button>
-            )}
-          </div>
+          ) : (
+            <Button
+              type="button"
+              onClick={() => submit(true)}
+              loading={pending}
+              disabled={!allValid}
+              className="ml-auto flex-1 sm:flex-none"
+            >
+              <Send />
+              <span className="truncate">
+                {isEdit ? 'Saqlash va chop etish' : 'Chop etishga yuborish'}
+              </span>
+            </Button>
+          )}
         </div>
 
         {step === STEPS.length - 1 && !allValid ? (

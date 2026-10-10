@@ -30,7 +30,7 @@ export function Pagination({
   const pages = buildPages(page, pageCount)
 
   const base =
-    'inline-flex h-10 min-w-10 items-center justify-center rounded-[10px] border px-3 text-sm font-medium transition-colors'
+    'inline-flex h-11 min-w-11 items-center justify-center rounded-[10px] border px-3 text-sm font-medium transition-colors lg:h-10 lg:min-w-10'
 
   return (
     <nav className={cn('flex items-center justify-center gap-1.5', className)} aria-label="Sahifalar">
@@ -48,6 +48,14 @@ export function Pagination({
         </span>
       )}
 
+      <span
+        className={cn(base, 'tabular border-border bg-surface text-text sm:hidden')}
+        aria-current="page"
+      >
+        {page} / {pageCount}
+      </span>
+
+      <span className="hidden items-center gap-1.5 sm:flex">
       {pages.map((p, i) =>
         p === '…' ? (
           <span key={`gap-${i}`} className="px-1 text-subtle">
@@ -71,6 +79,7 @@ export function Pagination({
           </Link>
         ),
       )}
+      </span>
 
       {page < pageCount ? (
         <Link

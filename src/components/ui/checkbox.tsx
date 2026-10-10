@@ -13,7 +13,7 @@ export function Checkbox({
   return (
     <CheckboxPrimitive.Root
       className={cn(
-        'flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border border-border-strong bg-surface transition-colors',
+        'flex size-5 shrink-0 items-center justify-center rounded-[5px] border border-border-strong bg-surface transition-colors lg:size-[18px]',
         'data-[state=checked]:border-primary data-[state=checked]:bg-primary',
         'disabled:cursor-not-allowed disabled:opacity-50',
         className,
@@ -48,7 +48,7 @@ export function CheckboxRow({
   return (
     <label
       className={cn(
-        'flex cursor-pointer items-center gap-2.5 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-surface-2',
+        'flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-1.5 transition-colors hover:bg-surface-2 lg:min-h-9 lg:gap-2.5',
         disabled && 'cursor-not-allowed opacity-50',
       )}
     >

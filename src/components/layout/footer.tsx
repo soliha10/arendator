@@ -35,8 +35,8 @@ const COLUMNS = [
 
 export function Footer() {
   return (
-    <footer className="mt-16 border-t border-border bg-surface">
-      <div className="container-page py-12">
+    <footer className="mt-12 border-t border-border bg-surface pb-nav sm:mt-16 lg:pb-0">
+      <div className="container-page py-10 sm:py-12">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
             <Logo />

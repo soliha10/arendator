@@ -17,7 +17,7 @@ export function SortSelect() {
       value={get('sort') || 'newest'}
       onChange={(e) => setParam('sort', e.target.value)}
       aria-label="Saralash"
-      className="w-full sm:w-56"
+      className="h-11 w-full lg:h-10 lg:w-56"
     >
       {SORT_OPTIONS.map((o) => (
         <option key={o.value} value={o.value}>
@@ -101,7 +101,7 @@ export function ActiveFilterChips({ data }: { data: FiltersData }) {
           onClick={() =>
             chip.value ? toggleInList(chip.key, chip.value) : setParam(chip.key, '')
           }
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-[13px] text-text transition-colors hover:border-danger hover:text-danger"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 text-[13px] text-text transition-colors hover:border-danger hover:text-danger"
         >
           {chip.label}
           <X className="size-3.5" />
@@ -111,7 +111,7 @@ export function ActiveFilterChips({ data }: { data: FiltersData }) {
         <button
           type="button"
           onClick={clearAll}
-          className="px-1 text-[13px] font-medium text-muted underline-offset-4 hover:text-danger hover:underline"
+          className="min-h-9 px-1.5 text-[13px] font-medium text-muted underline-offset-4 hover:text-danger hover:underline"
         >
           Hammasini tozalash
         </button>

@@ -34,7 +34,20 @@
   --ring: #1e5eff;
   --shadow-color: 220 20% 40%;
 
+  /* Yopishqoq elementlar balandligi (mobil → desktop) */
+  --header-h: 3.5rem;
+  --bottomnav-h: 3.75rem;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+
   color-scheme: light;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --header-h: 4rem;
+    --bottomnav-h: 0rem;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -130,6 +143,10 @@
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   --radius-card: 0.875rem;
+
+  /* Mobil chrome balandliklari — layout hisob-kitoblarida ishlatiladi */
+  --spacing-header: var(--header-h);
+  --spacing-bottomnav: var(--bottomnav-h);
 }
 
 @layer base {
@@ -177,30 +194,136 @@
       padding-inline: 1.5rem;
     }
   }
+}
 
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-  }
+/* ──────────────────────────────────────────────────────────────
+   Maxsus utility'lar.
 
-  .surface-shadow {
-    box-shadow:
-      0 1px 2px hsl(var(--shadow-color) / 0.06),
-      0 4px 16px -6px hsl(var(--shadow-color) / 0.12);
-  }
+   Tailwind v4 da `@utility` orqali eʼlon qilingan sinf variantlarni
+   ham qoʻllab-quvvatlaydi: `sm:card`, `lg:line-clamp-1x` kabi
+   yozuvlar shu tufayli ishlaydi (oddiy `@layer utilities` bilan
+   yozilganda variantlar generatsiya qilinmaydi).
+   ────────────────────────────────────────────────────────────── */
 
-  .hide-scrollbar {
-    scrollbar-width: none;
-  }
-  .hide-scrollbar::-webkit-scrollbar {
+@utility card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+@utility surface-shadow {
+  box-shadow:
+    0 1px 2px hsl(var(--shadow-color) / 0.06),
+    0 4px 16px -6px hsl(var(--shadow-color) / 0.12);
+}
+
+@utility hide-scrollbar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
     display: none;
   }
+}
 
-  /* Uzun matnni n qatorda kesish */
-  .line-clamp-1x { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-  .line-clamp-2x { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .line-clamp-3x { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+/* Uzun matnni n qatorda kesish */
+@utility line-clamp-1x {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@utility line-clamp-2x {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@utility line-clamp-3x {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Mobil: xavfsiz zona (iPhone "home indicator", notch) ────── */
+@utility pb-safe {
+  padding-bottom: var(--safe-b);
+}
+@utility pt-safe {
+  padding-top: var(--safe-t);
+}
+@utility mb-safe {
+  margin-bottom: var(--safe-b);
+}
+@utility bottom-safe {
+  bottom: var(--safe-b);
+}
+
+/* Pastki navigatsiya + xavfsiz zona uchun sahifa "nafas olish" joyi */
+@utility pb-nav {
+  padding-bottom: calc(var(--bottomnav-h) + var(--safe-b));
+}
+
+/* Yopishqoq sarlavha ostida qolmaslik uchun anchor offseti */
+@utility scroll-offset {
+  scroll-margin-top: calc(var(--header-h) + 0.75rem);
+}
+
+/* Barmoq uchun minimal nishon (Apple HIG 44px, Material 48dp) */
+@utility tap {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+/* Gorizontal "karusel": barmoq bilan surilib, har element joyiga tushadi */
+@utility snap-row {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+@utility snap-item {
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+@utility snap-item-start {
+  scroll-snap-align: start;
+}
+
+/* Ichki panel scroll'i sahifani "tortib ketmasligi" uchun */
+@utility scroll-contain {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Qatlamsiz (unlayered) qoidalar — Tailwind utility'laridan ustun
+   turadi, shuning uchun bu yerda faqat qat'iy talablar saqlanadi.
+   ────────────────────────────────────────────────────────────── */
+
+/* iOS Safari font-size 16px dan kichik maydonga fokuslanganda sahifani
+   avtomatik kattalashtiradi. Mobilda barcha kiritish maydonlari 16px. */
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Barmoq bilan bosilganda kulrang "flash" chiqmasin */
+@media (hover: none) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Sensorli qurilmada hover yoʻq — koʻrinishni hover'ga bogʻlamaymiz */
+@media (hover: none) {
+  .touch-visible {
+    opacity: 1 !important;
+  }
 }
 
 /* Skeleton animatsiyasi */

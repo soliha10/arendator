@@ -43,7 +43,7 @@ export default async function LeadsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-text">
+        <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">
           {isArendator ? 'Kelgan arizalar' : 'Mening arizalarim'}
         </h1>
         <p className="mt-1.5 text-sm text-muted">

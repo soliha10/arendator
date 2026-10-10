@@ -18,7 +18,7 @@ export default async function RegisterPage(props: PageProps<'/royxatdan-otish'>)
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-text">Roʻyxatdan oʻtish</h1>
+      <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">Roʻyxatdan oʻtish</h1>
       <p className="mt-2 text-sm text-muted">
         Hisobingiz bormi?{' '}
         <Link href="/kirish" className="font-medium text-primary hover:underline">

@@ -16,7 +16,7 @@ export default function GlobalError({
   }, [error])
 
   return (
-    <div className="flex min-h-dvh items-center justify-center px-5 py-12">
+    <div className="flex min-h-dvh items-center justify-center px-4 py-10 sm:px-5 sm:py-12">
       <div className="max-w-md text-center">
         <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-danger-soft text-danger">
           <AlertTriangle className="size-7" />

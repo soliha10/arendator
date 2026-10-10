@@ -50,14 +50,23 @@ export function SearchBar({
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
+        enterKeyHint="search"
+        autoCapitalize="off"
+        autoCorrect="off"
         aria-label="Eʼlonlar boʻyicha qidiruv"
-        className="h-11 w-full rounded-[12px] border border-border bg-surface pl-11 pr-24 text-sm text-text placeholder:text-subtle transition-colors hover:border-border-strong"
+        className="h-12 w-full rounded-[12px] border border-border bg-surface pl-11 pr-14 text-sm text-text placeholder:text-subtle transition-colors hover:border-border-strong sm:h-11 sm:pr-24"
       />
+      {/*
+        Telefonda tugma faqat belgidan iborat — matn uchun joy qoldirsak
+        qidiruv maydonining oʻzi juda torayib qoladi.
+      */}
       <button
         type="submit"
-        className="absolute right-1.5 top-1/2 h-8 -translate-y-1/2 rounded-[9px] bg-primary px-4 text-[13px] font-medium text-primary-fg transition-colors hover:bg-primary-hover"
+        aria-label="Qidirish"
+        className="absolute right-1.5 top-1/2 flex h-9 w-10 -translate-y-1/2 items-center justify-center rounded-[9px] bg-primary text-[13px] font-medium text-primary-fg transition-colors hover:bg-primary-hover sm:h-8 sm:w-auto sm:px-4"
       >
-        Qidirish
+        <Search className="size-[18px] sm:hidden" aria-hidden />
+        <span className="hidden sm:inline">Qidirish</span>
       </button>
     </form>
   )

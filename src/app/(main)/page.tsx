@@ -72,34 +72,34 @@ export default async function HomePage() {
           }}
           aria-hidden
         />
-        <div className="container-page relative py-14 sm:py-20">
+        <div className="container-page relative py-8 sm:py-16 lg:py-20">
           <div className="mx-auto max-w-3xl text-center">
-            <Badge variant="primary" className="mb-5">
+            <Badge variant="primary" className="mb-4 sm:mb-5">
               <Sparkles className="size-3.5" />
               {stats.listings} ta faol eʼlon · {stats.plans} ta toʻlov sharti
             </Badge>
 
-            <h1 className="text-balance text-[32px] font-bold leading-[1.15] tracking-tight text-text sm:text-[44px]">
+            <h1 className="text-balance text-[27px] font-bold leading-[1.18] tracking-tight text-text sm:text-[38px] lg:text-[44px]">
               Avtomobilni <span className="text-primary">rassrochkaga</span> olishning
               eng shaffof yoʻli
             </h1>
 
-            <p className="mx-auto mt-4 max-w-2xl text-pretty text-[15px] leading-relaxed text-muted sm:text-base">
+            <p className="mx-auto mt-3 max-w-2xl text-pretty text-[15px] leading-relaxed text-muted sm:mt-4 sm:text-base">
               Arendatorlar mashinalarini boshlangʻich va oylik toʻlov bilan joylaydi.
               Siz esa oylik toʻlovni, jami ustamani va toʻliq yillik grafikni
               yonma-yon taqqoslab, oʻzingizga qulayini tanlaysiz.
             </p>
 
-            <div className="mx-auto mt-7 max-w-xl">
+            <div className="mx-auto mt-6 max-w-xl sm:mt-7">
               <SearchBar placeholder="Chevrolet Cobalt, Kia K5, krossover…" />
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <div className="hide-scrollbar -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:justify-center sm:px-0">
               {QUICK_FILTERS.map((f) => (
                 <Link
                   key={f.href}
                   href={f.href}
-                  className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-[13px] font-medium text-muted transition-colors hover:border-primary hover:text-primary"
+                  className="inline-flex min-h-9 shrink-0 items-center whitespace-nowrap rounded-full border border-border bg-surface px-3.5 text-[13px] font-medium text-muted transition-colors hover:border-primary hover:text-primary"
                 >
                   {f.label}
                 </Link>
@@ -108,7 +108,7 @@ export default async function HomePage() {
           </div>
 
           {/* Statistika */}
-          <dl className="mx-auto mt-12 grid max-w-3xl grid-cols-2 gap-4 sm:grid-cols-4">
+          <dl className="mx-auto mt-8 grid max-w-3xl grid-cols-2 gap-2.5 sm:mt-12 sm:grid-cols-4 sm:gap-4">
             {[
               { label: 'Faol eʼlonlar', value: stats.listings, icon: CarFront },
               { label: 'Arendatorlar', value: stats.arendators, icon: Users },
@@ -119,7 +119,7 @@ export default async function HomePage() {
                 icon: TrendingDown,
               },
             ].map((s) => (
-              <div key={s.label} className="card px-4 py-3.5 text-center">
+              <div key={s.label} className="card px-3 py-3 text-center sm:px-4 sm:py-3.5">
                 <s.icon className="mx-auto size-4 text-subtle" />
                 <dd className="tabular mt-2 text-xl font-bold text-text">{s.value}</dd>
                 <dt className="mt-0.5 text-[12px] text-muted">{s.label}</dt>
@@ -130,9 +130,9 @@ export default async function HomePage() {
       </section>
 
       {/* ── Markalar ───────────────────────────────────────── */}
-      <section className="container-page py-10">
+      <section className="container-page py-8 sm:py-10">
         <div className="flex items-end justify-between gap-4">
-          <h2 className="text-lg font-semibold text-text">Markalar boʻyicha</h2>
+          <h2 className="text-[17px] font-semibold text-text sm:text-lg">Markalar boʻyicha</h2>
           <Link
             href="/elonlar"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
@@ -140,12 +140,12 @@ export default async function HomePage() {
             Barchasi <ArrowRight className="size-4" />
           </Link>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5 lg:grid-cols-5">
           {topBrands.map((brand) => (
             <Link
               key={brand.id}
               href={`/elonlar?brand=${brand.slug}`}
-              className="card flex items-center justify-between px-4 py-3 transition-colors hover:border-primary"
+              className="card flex min-h-12 items-center justify-between px-3.5 transition-colors hover:border-primary sm:px-4"
             >
               <span className="truncate text-sm font-medium text-text">{brand.name}</span>
               <span className="tabular ml-2 shrink-0 text-xs text-subtle">
@@ -157,10 +157,10 @@ export default async function HomePage() {
       </section>
 
       {/* ── Tanlangan e'lonlar ─────────────────────────────── */}
-      <section className="container-page py-6">
+      <section className="container-page py-6 sm:py-8">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-text">Eng soʻnggi takliflar</h2>
+            <h2 className="text-[17px] font-semibold text-text sm:text-lg">Eng soʻnggi takliflar</h2>
             <p className="mt-1 text-sm text-muted">
               Arendatorlar yaqinda joylagan avtomobillar
             </p>
@@ -171,14 +171,20 @@ export default async function HomePage() {
             </Link>
           </Button>
         </div>
-        <ListingGrid listings={latest} favoriteIds={favoriteIds} columns={4} className="mt-5" />
+        <ListingGrid
+          listings={latest}
+          favoriteIds={favoriteIds}
+          columns={4}
+          mobileLimit={4}
+          className="mt-5"
+        />
       </section>
 
       {/* ── Qanday ishlaydi ────────────────────────────────── */}
       <section className="border-y border-border bg-surface">
-        <div className="container-page py-12">
+        <div className="container-page py-10 sm:py-12">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-text">
+            <h2 className="text-xl font-bold tracking-tight text-text sm:text-2xl">
               Qanday ishlaydi
             </h2>
             <p className="mt-2 text-sm text-muted">
@@ -186,9 +192,9 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <ol className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ol className="mt-7 grid gap-3 sm:mt-9 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             {STEPS.map((step, i) => (
-              <li key={step.title} className="card relative p-5">
+              <li key={step.title} className="card relative p-4 sm:p-5">
                 <span className="tabular absolute right-4 top-4 text-[28px] font-bold leading-none text-surface-3">
                   {i + 1}
                 </span>
@@ -204,10 +210,10 @@ export default async function HomePage() {
       </section>
 
       {/* ── Arendatorlar ───────────────────────────────────── */}
-      <section className="container-page py-12">
+      <section className="container-page py-10 sm:py-12">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-text">Ishonchli arendatorlar</h2>
+            <h2 className="text-[17px] font-semibold text-text sm:text-lg">Ishonchli arendatorlar</h2>
             <p className="mt-1 text-sm text-muted">
               Reyting va sharhlar asosida saralangan
             </p>
@@ -219,12 +225,12 @@ export default async function HomePage() {
           </Button>
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           {arendators.map((a) => (
             <Link
               key={a.id}
               href={`/arendator/${a.slug}`}
-              className="card group p-5 transition-colors hover:border-primary"
+              className="card group p-4 transition-colors hover:border-primary sm:p-5"
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="flex size-11 items-center justify-center rounded-xl bg-primary-soft text-[15px] font-bold text-primary">
@@ -258,14 +264,14 @@ export default async function HomePage() {
       </section>
 
       {/* ── Arendatorlar uchun CTA ─────────────────────────── */}
-      <section className="container-page pb-16">
+      <section className="container-page pb-12 sm:pb-16">
         <div className="card overflow-hidden">
-          <div className="grid items-center gap-8 p-8 lg:grid-cols-2 lg:p-12">
+          <div className="grid items-center gap-7 p-5 sm:p-8 lg:grid-cols-2 lg:p-12">
             <div>
               <Badge variant="primary" className="mb-4">
                 Arendatorlar uchun
               </Badge>
-              <h2 className="text-2xl font-bold tracking-tight text-text sm:text-3xl">
+              <h2 className="text-xl font-bold tracking-tight text-text sm:text-2xl lg:text-3xl">
                 Avtomobilingizni rassrochkaga qoʻying
               </h2>
               <p className="mt-3 text-[15px] leading-relaxed text-muted">
@@ -286,7 +292,7 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-7 flex flex-wrap gap-3">
+              <div className="mt-7 grid gap-2.5 sm:flex sm:flex-wrap sm:gap-3">
                 <Button asChild size="lg">
                   <Link href="/royxatdan-otish?rol=arendator">Arendator boʻlish</Link>
                 </Button>
@@ -296,7 +302,7 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border bg-surface-2 p-6">
+            <div className="rounded-2xl border border-border bg-surface-2 p-4 sm:p-6">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-subtle">
                 Misol
               </p>

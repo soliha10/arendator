@@ -58,9 +58,9 @@ export default async function CatalogPage(props: PageProps<'/elonlar'>) {
   }
 
   return (
-    <div className="container-page py-6 lg:py-8">
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold tracking-tight text-text">
+    <div className="container-page py-4 sm:py-6 lg:py-8">
+      <div className="mb-4 sm:mb-5">
+        <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">
           {filters.q ? `“${filters.q}” boʻyicha natijalar` : 'Barcha eʼlonlar'}
         </h1>
         <p className="mt-1 text-sm text-muted">
@@ -73,13 +73,22 @@ export default async function CatalogPage(props: PageProps<'/elonlar'>) {
         <FiltersSidebar data={filtersData} />
 
         <div className="min-w-0">
-          <div className="mb-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <FiltersDrawer data={filtersData} activeCount={activeCount} />
-              <div className="ml-auto">
-                <SortSelect />
-              </div>
+          {/*
+            Telefonda filtr va saralash sarlavha ostida yopishib qoladi —
+            uzun roʻyxatni aylantirib ketgandan keyin ham qoʻl ostida.
+          */}
+          <div className="sticky top-[var(--header-h)] z-30 -mx-4 mb-3 border-b border-border bg-bg/95 px-4 py-2.5 backdrop-blur sm:-mx-6 sm:px-6 lg:static lg:z-auto lg:mx-0 lg:mb-4 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none">
+            <div className="grid grid-cols-2 gap-2 lg:flex lg:justify-end">
+              <FiltersDrawer
+                data={filtersData}
+                activeCount={activeCount}
+                resultCount={result.total}
+              />
+              <SortSelect />
             </div>
+          </div>
+
+          <div className="mb-4">
             <ActiveFilterChips data={filtersData} />
           </div>
 

@@ -23,29 +23,29 @@ const HIGHLIGHTS = [
 
 export default function AuthLayout({ children }: LayoutProps<'/'>) {
   return (
-    <div className="flex min-h-dvh flex-col lg:flex-row">
+    <div className="flex min-h-dvh flex-col pb-safe pt-safe lg:flex-row">
       {/* Chap: forma */}
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between p-5">
+        <header className="flex items-center justify-between p-4 sm:p-5">
           <Logo />
           <div className="flex items-center gap-1">
             <ThemeToggle />
             <Link
               href="/"
-              className="inline-flex h-9 items-center gap-1.5 rounded-[10px] px-3 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-text"
+              className="inline-flex h-10 items-center gap-1.5 rounded-[10px] px-3 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-text"
             >
               <ArrowLeft className="size-4" /> Bosh sahifa
             </Link>
           </div>
         </header>
 
-        <main className="flex flex-1 items-center justify-center px-5 py-8">
+        <main className="flex flex-1 items-center justify-center px-4 py-6 sm:px-5 sm:py-8">
           <div className="w-full max-w-md">{children}</div>
         </main>
       </div>
 
       {/* O'ng: reklama paneli */}
-      <div className="hidden w-[42%] max-w-xl border-l border-border bg-surface lg:flex lg:flex-col lg:justify-center lg:p-12">
+      <div className="relative hidden w-[42%] max-w-xl overflow-hidden border-l border-border bg-surface lg:flex lg:flex-col lg:justify-center lg:p-12">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.05]"
           style={{
@@ -55,7 +55,7 @@ export default function AuthLayout({ children }: LayoutProps<'/'>) {
           aria-hidden
         />
         <div className="relative">
-          <h2 className="text-2xl font-bold tracking-tight text-text">
+          <h2 className="text-xl font-bold tracking-tight text-text sm:text-2xl">
             Avtomobil rassrochkasi — shaffof shartlar bilan
           </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-muted">

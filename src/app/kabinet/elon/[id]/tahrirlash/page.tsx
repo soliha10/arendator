@@ -102,7 +102,7 @@ export default async function EditListingPage(
       </Link>
 
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold tracking-tight text-text">
+        <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">
           Eʼlonni tahrirlash
         </h1>
         <Badge

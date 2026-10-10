@@ -21,7 +21,7 @@ export default async function ArendatorsPage() {
   return (
     <div className="container-page py-6 lg:py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-text">Arendatorlar</h1>
+        <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">Arendatorlar</h1>
         <p className="mt-1.5 text-sm text-muted">
           <span className="tabular font-medium text-text">{arendators.length}</span> ta
           kompaniya · shundan{' '}

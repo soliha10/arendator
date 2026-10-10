@@ -27,7 +27,7 @@ function StatTile({
   accent?: 'primary' | 'warning' | 'success'
 }) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-3.5">
+    <div className="rounded-xl border border-border bg-surface p-3 sm:p-3.5">
       <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-subtle">
         {label}
         {hint ? (
@@ -40,7 +40,7 @@ function StatTile({
       </p>
       <p
         className={cn(
-          'tabular mt-1 text-[17px] font-bold leading-tight',
+          'tabular mt-1 text-[15px] font-bold leading-tight sm:text-[17px]',
           accent === 'primary' && 'text-primary',
           accent === 'warning' && 'text-warning',
           accent === 'success' && 'text-success',
@@ -97,8 +97,8 @@ export function PlanViewer({ plans }: { plans: PlanDto[] }) {
       : 100
 
   return (
-    <section id="shartlar" className="card overflow-hidden">
-      <div className="border-b border-border px-5 pt-5">
+    <section id="shartlar" className="card scroll-offset overflow-hidden">
+      <div className="border-b border-border px-4 pt-4 sm:px-5 sm:pt-5">
         <h2 className="text-lg font-semibold text-text">Toʻlov shartlari</h2>
         <p className="mt-1 text-sm text-muted">
           {plans.length > 1
@@ -137,7 +137,7 @@ export function PlanViewer({ plans }: { plans: PlanDto[] }) {
         </div>
       </div>
 
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <Badge variant={plan.planType === 'RENT' ? 'default' : 'primary'}>
             {PLAN_TYPE_LABELS[plan.planType]}
@@ -163,7 +163,7 @@ export function PlanViewer({ plans }: { plans: PlanDto[] }) {
         </p>
 
         {/* Asosiy raqamlar */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
           <StatTile
             label="Boshlangʻich toʻlov"
             value={money(plan.downPayment)}

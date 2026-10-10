@@ -18,12 +18,12 @@ export function FilterSection({
   const [open, setOpen] = React.useState(defaultOpen)
 
   return (
-    <div className="border-b border-border py-3.5 last:border-0">
+    <div className="border-b border-border py-1.5 last:border-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 text-left"
+        className="flex min-h-11 w-full items-center justify-between gap-2 text-left"
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-text">
           {title}
@@ -40,7 +40,7 @@ export function FilterSection({
           )}
         />
       </button>
-      {open ? <div className="mt-3">{children}</div> : null}
+      {open ? <div className="mb-2 mt-1">{children}</div> : null}
     </div>
   )
 }
@@ -100,7 +100,7 @@ export function MoneyRange({
   }
 
   const inputClass =
-    'h-9 w-full rounded-[9px] border border-border bg-surface px-2.5 text-sm text-text placeholder:text-subtle tabular hover:border-border-strong'
+    'h-11 w-full rounded-[9px] border border-border bg-surface px-2.5 text-sm text-text placeholder:text-subtle tabular hover:border-border-strong lg:h-9'
 
   return (
     <div className="flex items-center gap-2">

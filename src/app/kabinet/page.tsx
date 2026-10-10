@@ -34,7 +34,7 @@ export default async function CabinetPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text">
+          <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">
             Salom, {user.fullName.split(' ')[0]}!
           </h1>
           <p className="mt-1.5 text-sm text-muted">
@@ -42,20 +42,20 @@ export default async function CabinetPage() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Link href="/kabinet/saqlanganlar" className="card p-5 transition-colors hover:border-primary">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+          <Link href="/kabinet/saqlanganlar" className="card p-3.5 transition-colors hover:border-primary sm:p-5">
             <Heart className="size-5 text-primary" />
-            <p className="tabular mt-3 text-2xl font-bold text-text">{favorites}</p>
-            <p className="mt-0.5 text-sm text-muted">Saqlangan eʼlon</p>
+            <p className="tabular mt-2.5 text-xl font-bold text-text sm:mt-3 sm:text-2xl">{favorites}</p>
+            <p className="mt-0.5 text-[13px] text-muted sm:text-sm">Saqlangan eʼlon</p>
           </Link>
-          <Link href="/kabinet/arizalar" className="card p-5 transition-colors hover:border-primary">
+          <Link href="/kabinet/arizalar" className="card p-3.5 transition-colors hover:border-primary sm:p-5">
             <Inbox className="size-5 text-primary" />
-            <p className="tabular mt-3 text-2xl font-bold text-text">{leads.length}</p>
-            <p className="mt-0.5 text-sm text-muted">Yuborilgan ariza</p>
+            <p className="tabular mt-2.5 text-xl font-bold text-text sm:mt-3 sm:text-2xl">{leads.length}</p>
+            <p className="mt-0.5 text-[13px] text-muted sm:text-sm">Yuborilgan ariza</p>
           </Link>
         </div>
 
-        <div className="card p-5">
+        <div className="card p-4 sm:p-5">
           <h2 className="mb-4 text-base font-semibold text-text">Soʻnggi arizalar</h2>
           {leads.length > 0 ? (
             <ul className="divide-y divide-border">
@@ -152,7 +152,7 @@ export default async function CabinetPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text">
+          <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">
             Salom, {user.fullName.split(' ')[0]}!
           </h1>
           <p className="mt-1.5 text-sm text-muted">
@@ -161,28 +161,29 @@ export default async function CabinetPage() {
               : 'Eʼlonlaringiz holati va statistikasi'}
           </p>
         </div>
-        <Button asChild>
+        {/* Telefonda bu amal kabinet sarlavhasi qatorida bor — takrorlanmaydi */}
+        <Button asChild className="hidden sm:inline-flex">
           <Link href="/kabinet/elon/yangi">
             <Plus /> Eʼlon joylash
           </Link>
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
         {stats.map((s) => {
           const content = (
             <>
               <s.icon className="size-5 text-primary" />
-              <p className="tabular mt-3 text-2xl font-bold text-text">{s.value}</p>
-              <p className="mt-0.5 text-sm text-muted">{s.label}</p>
+              <p className="tabular mt-2.5 text-xl font-bold text-text sm:mt-3 sm:text-2xl">{s.value}</p>
+              <p className="mt-0.5 text-[13px] text-muted sm:text-sm">{s.label}</p>
             </>
           )
           return s.href ? (
-            <Link key={s.label} href={s.href} className="card p-5 transition-colors hover:border-primary">
+            <Link key={s.label} href={s.href} className="card p-3.5 transition-colors hover:border-primary sm:p-5">
               {content}
             </Link>
           ) : (
-            <div key={s.label} className="card p-5">
+            <div key={s.label} className="card p-3.5 sm:p-5">
               {content}
             </div>
           )

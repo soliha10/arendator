@@ -20,7 +20,7 @@ export default async function NewListingPage() {
         <ArrowLeft className="size-4" /> Eʼlonlarim
       </Link>
 
-      <h1 className="text-2xl font-bold tracking-tight text-text">Yangi eʼlon</h1>
+      <h1 className="text-xl font-bold tracking-tight text-text sm:text-2xl">Yangi eʼlon</h1>
       <p className="mt-1.5 text-sm text-muted">
         Avtomobil maʼlumotlari va toʻlov shartlarini kiriting — grafik avtomatik
         hisoblanadi.
