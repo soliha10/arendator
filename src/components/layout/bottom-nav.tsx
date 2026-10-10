@@ -1,9 +1,7 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Heart, Home, Scale, Search, User } from 'lucide-react'
-import { useCompare } from '@/lib/compare-store'
+import { Link, useMessages, usePathnameWithoutLocale } from '@/i18n/client'
+import { Calculator, CarFront, Home, Plus, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /**
@@ -13,11 +11,11 @@ import { cn } from '@/lib/utils'
  */
 
 const ITEMS = [
-  { href: '/', label: 'Bosh sahifa', icon: Home, exact: true },
-  { href: '/elonlar', label: 'Eʼlonlar', icon: Search },
-  { href: '/taqqoslash', label: 'Taqqoslash', icon: Scale, badge: 'compare' as const },
-  { href: '/kabinet/saqlanganlar', label: 'Saqlangan', icon: Heart },
-  { href: '/kabinet', label: 'Kabinet', icon: User, exact: true },
+  { href: '/', key: 'home' as const, icon: Home, exact: true },
+  { href: '/elonlar', key: 'cars' as const, icon: CarFront },
+  { href: '/kabinet/elon/yangi', key: 'post' as const, icon: Plus, fab: true },
+  { href: '/kalkulyator', key: 'calculator' as const, icon: Calculator },
+  { href: '/kabinet', key: 'profile' as const, icon: User },
 ]
 
 /**
@@ -34,14 +32,14 @@ const HIDDEN_PREFIXES = [
 ]
 
 export function BottomNav() {
-  const pathname = usePathname()
-  const { count, isReady } = useCompare()
+  const pathname = usePathnameWithoutLocale()
+  const t = useMessages().common.bottomNav
 
   if (HIDDEN_PREFIXES.some((p) => pathname.startsWith(p))) return null
 
   return (
     <nav
-      aria-label="Asosiy navigatsiya"
+      aria-label={t.aria}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-safe backdrop-blur-lg lg:hidden"
     >
       <ul className="flex h-[var(--bottomnav-h)] items-stretch">
@@ -49,7 +47,20 @@ export function BottomNav() {
           const active = item.exact
             ? pathname === item.href
             : pathname.startsWith(item.href)
-          const showBadge = item.badge === 'compare' && isReady && count > 0
+
+          if (item.fab) {
+            return (
+              <li key={item.href} className="flex flex-1 items-start justify-center">
+                <Link
+                  href={item.href}
+                  aria-label={t[item.key]}
+                  className="-mt-5 flex size-14 items-center justify-center rounded-full bg-primary text-primary-fg shadow-lg ring-4 ring-surface transition-transform active:scale-95"
+                >
+                  <item.icon className="size-7" strokeWidth={2.4} aria-hidden />
+                </Link>
+              </li>
+            )
+          }
 
           return (
             <li key={item.href} className="flex-1">
@@ -58,22 +69,15 @@ export function BottomNav() {
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex h-full flex-col items-center justify-center gap-1 px-1 transition-colors',
-                  active ? 'text-primary' : 'text-subtle',
+                  active ? 'font-semibold text-primary' : 'text-muted',
                 )}
               >
-                <span className="relative">
-                  <item.icon
-                    className="size-[22px]"
-                    strokeWidth={active ? 2.4 : 1.8}
-                    aria-hidden
-                  />
-                  {showBadge ? (
-                    <span className="tabular absolute -right-2 -top-1.5 flex min-w-[17px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-[17px] text-primary-fg">
-                      {count}
-                    </span>
-                  ) : null}
-                </span>
-                <span className="text-[10px] font-medium leading-none">{item.label}</span>
+                <item.icon
+                  className="size-[22px]"
+                  strokeWidth={active ? 2.4 : 1.8}
+                  aria-hidden
+                />
+                <span className="text-[10px] font-medium leading-none">{t[item.key]}</span>
               </Link>
             </li>
           )

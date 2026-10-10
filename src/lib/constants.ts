@@ -159,3 +159,60 @@ export const LISTING_PAGE_SIZE = 12
 
 /** E'lon nechchi kun faol turadi */
 export const LISTING_ACTIVE_DAYS = 30
+
+/**
+ * Avtomobil qulayliklari. Kalit bazada saqlanadi (Listing.features),
+ * nom faqat UI'da — tarjima qo'shilganda bazaga tegilmaydi.
+ */
+export const FEATURE_OPTIONS = [
+  { key: 'climate', label: 'Konditsioner / Klimat' },
+  { key: 'sunroof', label: 'Panorama / lyuk' },
+  { key: 'cruise', label: 'Kruiz nazorati' },
+  { key: 'camera', label: 'Orqa kamera / 360°' },
+  { key: 'parking_sensors', label: 'Parktronik' },
+  { key: 'heated_seats', label: 'Oʻrindiq isitish' },
+  { key: 'leather', label: 'Charm salon' },
+  { key: 'keyless', label: 'Kalitsiz kirish / Start-stop' },
+  { key: 'carplay', label: 'CarPlay / Android Auto' },
+  { key: 'alarm', label: 'Signalizatsiya' },
+  { key: 'tint', label: 'Tonirovka ruxsati' },
+  { key: 'gas', label: 'Gaz uskunasi (metan/propan)' },
+  { key: 'no_paint', label: 'Kraska tegmagan' },
+  { key: 'warranty', label: 'Rasmiy kafolat' },
+] as const
+
+export type FeatureKey = (typeof FEATURE_OPTIONS)[number]['key']
+
+export const FEATURE_LABELS: Record<string, string> = Object.fromEntries(
+  FEATURE_OPTIONS.map((f) => [f.key, f.label]),
+)
+
+/** Katalog va bosh sahifadagi bitim turlari (CASH — naqd sotuv) */
+export const DEAL_TYPES = [
+  { value: 'RENT', label: 'Arenda / Ijara', short: 'Arenda' },
+  { value: 'INSTALLMENT', label: 'Muddatli toʻlov (Rassrochka)', short: 'Rassrochka' },
+  { value: 'LEASING', label: 'Lizing', short: 'Lizing' },
+  { value: 'CASH', label: 'Naqd sotuv', short: 'Naqd' },
+] as const
+
+export const PROMOTION_PLANS = [
+  {
+    tier: 'VIP' as const,
+    days: 7,
+    priceUzs: 49_000,
+    title: 'VIP eʼlon',
+    hint: 'Qidiruvda yuqorida va rangli ramka bilan',
+  },
+  {
+    tier: 'TOP' as const,
+    days: 3,
+    priceUzs: 120_000,
+    title: 'TOP eʼlon',
+    hint: 'Bosh sahifa va katalogning eng tepasida',
+  },
+]
+
+export const ACCOUNT_TYPE_LABELS = {
+  INDIVIDUAL: 'Jismoniy shaxs',
+  BUSINESS: 'Yuridik shaxs (diler / avtosalon)',
+} as const

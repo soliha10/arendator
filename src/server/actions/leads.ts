@@ -1,10 +1,16 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidateLocalized } from '@/i18n/revalidate'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser, getActionUser } from '@/lib/auth/guards'
 import { leadSchema, leadStatusSchema } from '@/lib/validation/lead'
+import { notify } from '@/server/notifications'
+import { LEAD_STATUS_LABELS } from '@/lib/constants'
 import { errorState, fromZodError, successState, type ActionState } from './types'
+import { getRequestMessages } from '@/i18n/action'
+
+/** Javob matnlari foydalanuvchi tilida */
+const msg = async () => (await getRequestMessages()).server
 
 /** Foydalanuvchi e'lon bo'yicha ariza qoldiradi */
 export async function createLeadAction(
@@ -21,13 +27,13 @@ export async function createLeadAction(
 
     const listing = await prisma.listing.findUnique({
       where: { id: listingId },
-      select: { id: true, status: true, ownerId: true },
+      select: { id: true, status: true, ownerId: true, title: true },
     })
     if (!listing || listing.status !== 'ACTIVE') {
-      return errorState('Bu eʼlon endi faol emas')
+      return errorState((await msg()).errors.listingInactive)
     }
     if (user && user.id === listing.ownerId) {
-      return errorState('Oʻz eʼloningizga ariza qoldira olmaysiz')
+      return errorState((await msg()).lead.ownListing)
     }
 
     // Spam himoyasi: bir raqamdan bir e'longa 1 soatda 1 marta
@@ -40,9 +46,7 @@ export async function createLeadAction(
       select: { id: true },
     })
     if (recent) {
-      return errorState(
-        'Siz bu eʼlonga yaqinda ariza qoldirgansiz. Arendator tez orada bogʻlanadi.',
-      )
+      return errorState((await msg()).lead.duplicate)
     }
 
     await prisma.$transaction([
@@ -62,13 +66,21 @@ export async function createLeadAction(
       }),
     ])
 
-    revalidatePath('/kabinet/arizalar')
-    return successState(
-      'Arizangiz yuborildi. Arendator tez orada siz bilan bogʻlanadi.',
-    )
+    await notify(prisma, {
+      userId: listing.ownerId,
+      type: 'LEAD_NEW',
+      title: 'Eʼloningiz boʻyicha yangi xaridor arizasi!',
+      body: `${fullName} “${listing.title}” eʼloningizga ariza qoldirdi.`,
+      link: '/kabinet/arizalar',
+      listingId,
+      data: { tpl: 'leadNew', vars: { name: fullName, listing: listing.title }, phone },
+    })
+
+    revalidateLocalized('/kabinet/arizalar')
+    return successState((await msg()).lead.sent)
   } catch (error) {
     console.error('createLeadAction:', error)
-    return errorState('Arizani yuborib boʻlmadi. Qayta urinib koʻring.')
+    return errorState((await msg()).lead.sendFailed)
   }
 }
 
@@ -84,11 +96,15 @@ export async function updateLeadStatusAction(
     const user = await getActionUser()
     const lead = await prisma.lead.findUnique({
       where: { id: parsed.data.leadId },
-      select: { id: true, listing: { select: { ownerId: true } } },
+      select: {
+        id: true,
+        userId: true,
+        listing: { select: { id: true, ownerId: true, title: true, slug: true } },
+      },
     })
-    if (!lead) return errorState('Ariza topilmadi')
+    if (!lead) return errorState((await msg()).lead.notFound)
     if (lead.listing.ownerId !== user.id && user.role !== 'ADMIN') {
-      return errorState('Bu arizani oʻzgartirishga ruxsatingiz yoʻq')
+      return errorState((await msg()).lead.noRights)
     }
 
     await prisma.lead.update({
@@ -101,10 +117,23 @@ export async function updateLeadStatusAction(
       },
     })
 
-    revalidatePath('/kabinet/arizalar')
-    return successState('Ariza holati yangilandi')
+    // Ro'yxatdan o'tgan xaridorga arizasi holati haqida xabar
+    if (lead.userId && ['CONTACTED', 'APPROVED', 'REJECTED'].includes(parsed.data.status)) {
+      await notify(prisma, {
+        userId: lead.userId,
+        type: 'LEAD_STATUS',
+        title: `Arizangiz holati: ${LEAD_STATUS_LABELS[parsed.data.status]}`,
+        body: `“${lead.listing.title}” boʻyicha arizangiz koʻrib chiqildi.`,
+        link: `/elon/${lead.listing.slug}`,
+        listingId: lead.listing.id,
+        data: { tpl: 'leadStatus', vars: { listing: lead.listing.title }, status: parsed.data.status },
+      })
+    }
+
+    revalidateLocalized('/kabinet/arizalar')
+    return successState((await msg()).lead.statusUpdated)
   } catch (error) {
     console.error('updateLeadStatusAction:', error)
-    return errorState('Holatni yangilab boʻlmadi')
+    return errorState((await msg()).lead.statusFailed)
   }
 }

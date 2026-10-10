@@ -2,56 +2,17 @@
 
 import * as React from 'react'
 import {
-  BadgeCheck, CalendarClock, CircleAlert, FileText, Gauge,
-  Info, PiggyBank, Receipt, ShieldCheck, Wallet, Wrench,
+  BadgeCheck, CalendarClock, ChevronDown, CircleAlert, FileText, Gauge,
+  PiggyBank, Receipt, ShieldCheck, Wrench,
 } from 'lucide-react'
 import type { PlanDto } from '@/server/mappers'
-import {
-  CALC_METHOD_HINTS, CALC_METHOD_LABELS, PLAN_TYPE_HINTS, PLAN_TYPE_LABELS,
-} from '@/lib/constants'
-import { formatDate, formatMoney, formatPercent, formatTerm } from '@/lib/format'
-import { Badge } from '@/components/ui/badge'
-import { Tooltip } from '@/components/ui/tooltip'
+import { formatDate, formatMileage, formatMoney, formatPercent, formatTerm } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { useLocale, useMessages } from '@/i18n/client'
+import { fmt } from '@/i18n/format'
 import { ScheduleTable } from './schedule-table'
-
-function StatTile({
-  label,
-  value,
-  hint,
-  accent,
-}: {
-  label: string
-  value: string
-  hint?: string
-  accent?: 'primary' | 'warning' | 'success'
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-surface p-3 sm:p-3.5">
-      <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-subtle">
-        {label}
-        {hint ? (
-          <Tooltip content={hint}>
-            <span className="cursor-help">
-              <Info className="size-3" />
-            </span>
-          </Tooltip>
-        ) : null}
-      </p>
-      <p
-        className={cn(
-          'tabular mt-1 text-[15px] font-bold leading-tight sm:text-[17px]',
-          accent === 'primary' && 'text-primary',
-          accent === 'warning' && 'text-warning',
-          accent === 'success' && 'text-success',
-          !accent && 'text-text',
-        )}
-      >
-        {value}
-      </p>
-    </div>
-  )
-}
+import { groupByContractYear } from './contract-years'
+import { useSelectedPlan } from './selected-plan'
 
 function ConditionRow({
   icon: Icon,
@@ -66,259 +27,182 @@ function ConditionRow({
 }) {
   return (
     <div className="flex items-start gap-2.5 py-2">
-      <Icon
-        className={cn('mt-0.5 size-4 shrink-0', ok ? 'text-success' : 'text-subtle')}
-      />
+      <Icon className={cn('mt-0.5 size-4 shrink-0', ok ? 'text-success' : 'text-subtle')} aria-hidden />
       <span className="flex-1 text-[13px] text-muted">{label}</span>
-      <span className="text-[13px] font-medium text-text">{value}</span>
+      <span className="text-right text-[13px] font-medium text-text">{value}</span>
+    </div>
+  )
+}
+
+/** Shartnoma yillari bo'yicha: asosiy qarz va ustama ustunlari */
+function YearBars({ plan }: { plan: PlanDto }) {
+  const t = useMessages().listing.plan
+  const locale = useLocale()
+  const years = groupByContractYear(plan.schedule)
+  const max = Math.max(1, ...years.flatMap((y) => [y.principal, y.markup]))
+  const short = (n: number) => formatMoney(n, plan.currency, { compact: true, withSuffix: false, locale })
+
+  return (
+    <div
+      className={cn(
+        'hide-scrollbar -mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-1 sm:grid sm:overflow-visible',
+        years.length >= 3 ? 'sm:grid-cols-2 xl:grid-cols-3' : 'sm:grid-cols-2',
+      )}
+    >
+      {years.map((y) => {
+        const equity =
+          plan.carPrice > 0
+            ? Math.min(100, ((plan.downPayment + (plan.carPrice - plan.downPayment) * (y.paidShare / 100)) / plan.carPrice) * 100)
+            : 0
+        return (
+          <div
+            key={y.index}
+            className="min-w-[240px] snap-start rounded-xl bg-surface-2 p-4 sm:min-w-0"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[16px] font-bold text-text">{fmt(t.year, { n: y.index })}</p>
+              <span className="tabular whitespace-nowrap rounded-md bg-surface-3 px-2 py-0.5 text-[11px] font-semibold text-muted">
+                {fmt(t.months, { from: y.fromMonth, to: y.toMonth })}
+              </span>
+            </div>
+            <div className="mt-4 flex h-24 items-end gap-2" aria-hidden>
+              <div className="flex-1 rounded-t-md bg-primary" style={{ height: `${Math.max(4, (y.principal / max) * 100)}%` }} />
+              <div className="flex-1 rounded-t-md bg-primary/30" style={{ height: `${Math.max(4, (y.markup / max) * 100)}%` }} />
+            </div>
+            <div className="tabular mt-2 grid grid-cols-2 gap-2 text-center text-[12px] font-semibold text-muted">
+              <span>{short(y.principal)}</span>
+              <span>{short(y.markup)}</span>
+            </div>
+            <dl className="mt-3 space-y-1 border-t border-border pt-3 text-[12px]">
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted">{t.yearTotal}</dt>
+                <dd className="tabular font-semibold text-text">{formatMoney(y.total, plan.currency, { locale })}</dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted">{t.yearEndBalance}</dt>
+                <dd className="tabular font-semibold text-text">{formatMoney(y.balanceEnd, plan.currency, { locale })}</dd>
+              </div>
+              {plan.ownershipTransfer ? (
+                <div className="flex justify-between gap-2">
+                  <dt className="text-muted">{t.equity}</dt>
+                  <dd className="tabular font-semibold text-success">{formatPercent(equity, 1, locale)}</dd>
+                </div>
+              ) : null}
+            </dl>
+          </div>
+        )
+      })}
     </div>
   )
 }
 
 export function PlanViewer({ plans }: { plans: PlanDto[] }) {
-  const defaultIndex = Math.max(0, plans.findIndex((p) => p.isDefault))
-  const [activeIndex, setActiveIndex] = React.useState(defaultIndex)
-  const plan = plans[activeIndex]
+  const m = useMessages()
+  const t = m.listing.plan
+  const locale = useLocale()
+  const defaultPlan = plans.find((p) => p.isDefault) ?? plans[0] ?? null
+  const selectedId = useSelectedPlan(defaultPlan?.id ?? null)
+  const plan = plans.find((p) => p.id === selectedId) ?? defaultPlan
+  const [detailsOpen, setDetailsOpen] = React.useState(false)
 
-  if (!plan) {
-    return (
-      <p className="rounded-xl bg-surface-2 p-4 text-sm text-muted">
-        Bu eʼlonga toʻlov sharti qoʻshilmagan.
-      </p>
-    )
-  }
+  if (!plan) return null
 
+  const isRent = plan.planType === 'RENT'
   const money = (n: number | null | undefined) =>
-    n === null || n === undefined ? '—' : formatMoney(n, plan.currency)
-
-  const principalShare =
-    plan.totalPayable > 0
-      ? ((plan.totalPayable - plan.markupAmount) / plan.totalPayable) * 100
-      : 100
+    n === null || n === undefined ? '—' : formatMoney(n, plan.currency, { locale })
 
   return (
-    <section id="shartlar" className="card scroll-offset overflow-hidden">
-      <div className="border-b border-border px-4 pt-4 sm:px-5 sm:pt-5">
-        <h2 className="text-lg font-semibold text-text">Toʻlov shartlari</h2>
-        <p className="mt-1 text-sm text-muted">
-          {plans.length > 1
-            ? `Arendator ${plans.length} xil shart taklif qilgan — solishtiring`
-            : 'Arendator taklif qilgan shart'}
-        </p>
-
-        {/* Shartlar tabi */}
-        <div className="hide-scrollbar -mb-px mt-4 flex gap-1 overflow-x-auto">
-          {plans.map((p, i) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setActiveIndex(i)}
-              aria-current={i === activeIndex}
-              className={cn(
-                'shrink-0 border-b-2 px-4 py-3 text-left transition-colors',
-                i === activeIndex
-                  ? 'border-primary'
-                  : 'border-transparent hover:border-border-strong',
-              )}
-            >
-              <span
-                className={cn(
-                  'block text-[13px] font-semibold',
-                  i === activeIndex ? 'text-primary' : 'text-text',
-                )}
-              >
-                {p.name}
-              </span>
-              <span className="tabular mt-0.5 block text-[12px] text-muted">
-                {formatMoney(p.monthlyPayment, p.currency, { compact: true })}/oy
-              </span>
-            </button>
-          ))}
+    <section id="shartlar" className="card scroll-offset p-5 sm:p-7" aria-labelledby="amort-title">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 id="amort-title" className="text-[22px] font-bold text-text">
+            {isRent ? t.titleRent : t.titleFinance}
+          </h2>
+          <p className="mt-1 text-[14px] text-muted">
+            {m.enums.planType[plan.planType]} · {formatTerm(plan.termMonths, locale)} ·{' '}
+            {fmt(t.perMonthSuffix, { amount: formatMoney(plan.monthlyPayment, plan.currency, { locale }) })}
+            {plans.length > 1 ? t.chooseOther : ''}
+          </p>
         </div>
+        {!isRent ? (
+          <div className="flex flex-wrap items-center gap-4 text-[13px] text-text">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-3 rounded-sm bg-primary" aria-hidden /> {t.principal}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-3 rounded-sm bg-primary/30" aria-hidden /> {t.markup}
+              {plan.markupPercent > 0 ? ` (${formatPercent(plan.markupPercent, 1, locale)})` : ''}
+            </span>
+          </div>
+        ) : null}
       </div>
 
-      <div className="p-4 sm:p-5">
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <Badge variant={plan.planType === 'RENT' ? 'default' : 'primary'}>
-            {PLAN_TYPE_LABELS[plan.planType]}
-          </Badge>
-          <Tooltip content={CALC_METHOD_HINTS[plan.calcMethod]}>
-            <span>
-              <Badge variant="default" className="cursor-help">
-                <Info /> {CALC_METHOD_LABELS[plan.calcMethod]}
-              </Badge>
-            </span>
-          </Tooltip>
-          {plan.ownershipTransfer ? (
-            <Badge variant="success">
-              <BadgeCheck /> Mulk huquqi oʻtadi
-            </Badge>
-          ) : (
-            <Badge variant="warning">Mulk huquqi oʻtmaydi</Badge>
-          )}
+      {!isRent && plan.schedule.length > 0 ? (
+        <div className="mt-6">
+          <YearBars plan={plan} />
         </div>
+      ) : null}
 
-        <p className="mb-4 text-[13px] leading-relaxed text-muted">
-          {PLAN_TYPE_HINTS[plan.planType]}
-        </p>
+      <div className="mt-8">
+        <ScheduleTable
+          schedule={plan.schedule}
+          currency={plan.currency}
+          planName={plan.name}
+          isRent={isRent}
+        />
+      </div>
 
-        {/* Asosiy raqamlar */}
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-          <StatTile
-            label="Boshlangʻich toʻlov"
-            value={money(plan.downPayment)}
-            hint={`Avtomobil narxining ${formatPercent(plan.downPaymentPercent)} qismi`}
-          />
-          <StatTile
-            label="Oylik toʻlov"
-            value={money(plan.monthlyPayment)}
-            accent="primary"
-            hint={`${formatTerm(plan.termMonths)} davomida har oyning ${plan.paymentDay}-kuni`}
-          />
-          <StatTile label="Jami toʻlov" value={money(plan.totalPayable)} />
-          <StatTile
-            label="Ustama"
-            value={money(plan.markupAmount)}
-            accent="warning"
-            hint={
-              plan.markupPercent > 0
-                ? `Samarali yillik stavka: ${formatPercent(plan.markupPercent, 2)}`
-                : 'Ustamasiz'
-            }
-          />
-        </div>
-
-        {/* Asosiy qarz / ustama nisbati */}
-        {plan.markupAmount > 0 ? (
-          <div className="mt-4">
-            <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-3">
-              <div
-                className="bg-primary"
-                style={{ width: `${principalShare}%` }}
-                aria-hidden
-              />
-              <div className="flex-1 bg-warning" aria-hidden />
+      {/* Shart tafsilotlari — huquqiy nuanslar */}
+      <div className="mt-6 rounded-xl border border-border">
+        <button
+          type="button"
+          onClick={() => setDetailsOpen((v) => !v)}
+          aria-expanded={detailsOpen}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left"
+        >
+          <span className="text-[15px] font-semibold text-text">{t.details}</span>
+          <ChevronDown className={cn('size-5 text-subtle transition-transform', detailsOpen && 'rotate-180')} aria-hidden />
+        </button>
+        {detailsOpen ? (
+          <div className="border-t border-border px-4 pb-4">
+            <div className="grid gap-x-8 sm:grid-cols-2">
+              <ConditionRow icon={Receipt} label={t.calcMethod} value={m.enums.calcMethod[plan.calcMethod]} />
+              <ConditionRow icon={Receipt} label={t.paymentDay} value={fmt(t.paymentDayValue, { day: plan.paymentDay })} />
+              {plan.startDate ? (
+                <ConditionRow icon={CalendarClock} label={t.startDate} value={formatDate(plan.startDate)} />
+              ) : null}
+              <ConditionRow icon={ShieldCheck} label={t.insurance} value={plan.insuranceIncluded ? t.included : t.separate} ok={plan.insuranceIncluded} />
+              <ConditionRow icon={ShieldCheck} label={t.casco} value={plan.cascoIncluded ? t.included : t.no} ok={plan.cascoIncluded} />
+              <ConditionRow icon={Wrench} label={t.maintenance} value={plan.maintenanceIncluded ? t.included : t.ownerPays} ok={plan.maintenanceIncluded} />
+              {plan.depositAmount ? <ConditionRow icon={PiggyBank} label={t.deposit} value={money(plan.depositAmount)} /> : null}
+              {plan.mileageLimitPerYear ? (
+                <ConditionRow
+                  icon={Gauge}
+                  label={t.kmLimit}
+                  value={`${formatMileage(plan.mileageLimitPerYear, locale)}${plan.extraMileageFee ? fmt(t.kmExtra, { fee: money(plan.extraMileageFee) }) : ''}`}
+                />
+              ) : null}
+              <ConditionRow icon={BadgeCheck} label={t.earlyPayoff} value={plan.earlyPayoffAllowed ? t.allowed : t.notAllowed} ok={plan.earlyPayoffAllowed} />
+              {plan.penaltyPerDay ? (
+                <ConditionRow icon={CircleAlert} label={t.penalty} value={fmt(t.perDay, { amount: money(plan.penaltyPerDay) })} />
+              ) : null}
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
-              <span className="inline-flex items-center gap-1.5 text-muted">
-                <span className="size-2 rounded-full bg-primary" aria-hidden />
-                Avtomobil narxi {formatPercent(principalShare)}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-muted">
-                <span className="size-2 rounded-full bg-warning" aria-hidden />
-                Ustama {formatPercent(100 - principalShare)}
-                {plan.markupPercent > 0
-                  ? ` · yillik ${formatPercent(plan.markupPercent, 1)}`
-                  : ''}
-              </span>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Shart tafsilotlari */}
-        <div className="mt-5 grid gap-x-8 gap-y-1 rounded-xl bg-surface-2 px-4 py-2 sm:grid-cols-2">
-          <ConditionRow
-            icon={CalendarClock}
-            label="Muddat"
-            value={formatTerm(plan.termMonths)}
-          />
-          <ConditionRow
-            icon={Wallet}
-            label="Avtomobil narxi"
-            value={money(plan.carPrice)}
-          />
-          <ConditionRow
-            icon={Receipt}
-            label="Toʻlov kuni"
-            value={`Har oyning ${plan.paymentDay}-kuni`}
-          />
-          {plan.startDate ? (
-            <ConditionRow
-              icon={CalendarClock}
-              label="Grafik boshlanishi"
-              value={formatDate(plan.startDate)}
-            />
-          ) : null}
-          <ConditionRow
-            icon={ShieldCheck}
-            label="Sugʻurta"
-            value={plan.insuranceIncluded ? 'Narxga kiritilgan' : 'Alohida toʻlanadi'}
-            ok={plan.insuranceIncluded}
-          />
-          <ConditionRow
-            icon={ShieldCheck}
-            label="KASKO"
-            value={plan.cascoIncluded ? 'Narxga kiritilgan' : 'Yoʻq'}
-            ok={plan.cascoIncluded}
-          />
-          <ConditionRow
-            icon={Wrench}
-            label="Texnik xizmat"
-            value={plan.maintenanceIncluded ? 'Narxga kiritilgan' : 'Egasi hisobidan'}
-            ok={plan.maintenanceIncluded}
-          />
-          {plan.depositAmount ? (
-            <ConditionRow
-              icon={PiggyBank}
-              label="Zalog"
-              value={money(plan.depositAmount)}
-            />
-          ) : null}
-          {plan.mileageLimitPerYear ? (
-            <ConditionRow
-              icon={Gauge}
-              label="Yillik km limiti"
-              value={`${plan.mileageLimitPerYear.toLocaleString('uz-UZ')} km${
-                plan.extraMileageFee
-                  ? ` · ortigʻi ${money(plan.extraMileageFee)}/km`
-                  : ''
-              }`}
-            />
-          ) : null}
-          <ConditionRow
-            icon={BadgeCheck}
-            label="Muddatidan oldin yopish"
-            value={plan.earlyPayoffAllowed ? 'Mumkin' : 'Mumkin emas'}
-            ok={plan.earlyPayoffAllowed}
-          />
-          {plan.penaltyPerDay ? (
-            <ConditionRow
-              icon={CircleAlert}
-              label="Kechikkanlik jarimasi"
-              value={`${money(plan.penaltyPerDay)}/kun`}
-            />
-          ) : null}
-        </div>
-
-        {plan.requiredDocuments ? (
-          <div className="mt-4 flex gap-3 rounded-xl border border-border p-4">
-            <FileText className="mt-0.5 size-4 shrink-0 text-subtle" />
-            <div>
-              <p className="text-[13px] font-semibold text-text">Kerakli hujjatlar</p>
-              <p className="mt-1 text-[13px] leading-relaxed text-muted">
-                {plan.requiredDocuments}
+            {plan.requiredDocuments ? (
+              <div className="mt-3 flex gap-3 rounded-xl bg-surface-2 p-4">
+                <FileText className="mt-0.5 size-4 shrink-0 text-subtle" aria-hidden />
+                <div>
+                  <p className="text-[13px] font-semibold text-text">{t.documents}</p>
+                  <p className="mt-1 text-[13px] leading-relaxed text-muted">{plan.requiredDocuments}</p>
+                </div>
+              </div>
+            ) : null}
+            {plan.notes ? (
+              <p className="mt-3 rounded-xl bg-warning-soft px-4 py-3 text-[13px] leading-relaxed text-warning">
+                {plan.notes}
               </p>
-            </div>
+            ) : null}
           </div>
         ) : null}
-
-        {plan.notes ? (
-          <p className="mt-3 rounded-xl bg-warning-soft px-4 py-3 text-[13px] leading-relaxed text-warning">
-            {plan.notes}
-          </p>
-        ) : null}
-
-        {/* Grafik */}
-        <div className="mt-6 border-t border-border pt-5">
-          <h3 className="mb-3 text-[15px] font-semibold text-text">
-            Toʻlov grafigi
-          </h3>
-          <ScheduleTable
-            schedule={plan.schedule}
-            currency={plan.currency}
-            planName={plan.name}
-          />
-        </div>
       </div>
     </section>
   )

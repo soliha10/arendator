@@ -8,6 +8,7 @@ import { createPlanWithSchedule, recalcListingAggregates, recalcProfileCounters 
 import { getRates } from '../src/server/exchange'
 import type { PlanOutput } from '../src/lib/validation/listing'
 import { BRANDS, BRAND_COLORS, CARS, COMPANIES, REGIONS } from './seed-data'
+import { FEATURE_OPTIONS } from '../src/lib/constants'
 import { buildBlurDataUrl, buildCarSvg, writeCarImage } from './placeholder'
 
 const PUBLIC_DIR = path.join(process.cwd(), 'public')
@@ -48,6 +49,10 @@ async function main() {
 
   // ── 0. Tozalash ────────────────────────────────────────────
   await prisma.$transaction([
+    prisma.notification.deleteMany(),
+    prisma.savedSearch.deleteMany(),
+    prisma.promotionRequest.deleteMany(),
+    prisma.priceHistory.deleteMany(),
     prisma.auditLog.deleteMany(),
     prisma.review.deleteMany(),
     prisma.lead.deleteMany(),
@@ -124,6 +129,8 @@ async function main() {
         fullName: c.fullName,
         passwordHash,
         role: 'ARENDATOR',
+        accountType: 'BUSINESS',
+        telegram: c.telegram,
         isPhoneVerified: true,
         profile: {
           create: {
@@ -136,6 +143,10 @@ async function main() {
             regionId: regionByName.get(c.region)?.id,
             telegram: c.telegram,
             workingHours: c.workingHours,
+            phone: c.phone,
+            tags: c.tags,
+            latitude: c.lat,
+            longitude: c.lng,
             isVerified: c.verified,
             verifiedAt: c.verified ? new Date() : null,
           },
@@ -231,6 +242,17 @@ async function main() {
         address: `${region.name}, avtosalon`,
         contactPhone: owner.phone,
         contactName: owner.fullName,
+        telegram: COMPANIES[listingIndex % COMPANIES.length].telegram,
+        features: FEATURE_OPTIONS.map((f) => f.key).filter(() => rnd() > 0.55),
+        // Ko'pchilik e'lonlarda naqd sotuv ham bor — xaridor uchta yo'lni solishtiradi
+        hasCashSale: listingIndex % 4 !== 0,
+        cashPrice: listingIndex % 4 !== 0 ? Math.round((car.price * 0.97) / 1_000_000) * 1_000_000 : null,
+        isNegotiable: listingIndex % 3 === 0,
+        promotion: listingIndex % 9 === 0 ? 'TOP' : listingIndex % 5 === 0 ? 'VIP' : 'NONE',
+        promotedUntil:
+          listingIndex % 9 === 0 || listingIndex % 5 === 0
+            ? new Date(Date.now() + between(2, 7) * 86_400_000)
+            : null,
         status: 'ACTIVE',
         isFeatured: listingIndex % 7 === 0,
         viewCount: between(15, 2400),
@@ -308,6 +330,8 @@ async function main() {
           cascoIncluded: true,
           maintenanceIncluded: true,
           depositAmount: Math.round(price * 0.05),
+          // Kunlik narx oylikdan qimmatroq chiqadi (≈ oylik / 22)
+          dailyPayment: Math.round((price * 0.028) / 22 / 10_000) * 10_000,
           mileageLimitPerYear: 30_000,
           extraMileageFee: 1_500,
           notes: 'Sugʻurta, KASKO va texnik xizmat narxga kiritilgan. Mulk huquqi oʻtmaydi.',
@@ -318,7 +342,32 @@ async function main() {
     for (const plan of plans) {
       await createPlanWithSchedule(prisma, listing.id, plan, rates)
     }
-    await recalcListingAggregates(prisma, listing.id)
+    await recalcListingAggregates(prisma, listing.id, rates)
+
+    // Narx tarixi: har 6-e'lon narxi yaqinda tushgan
+    const agg = await prisma.listing.findUniqueOrThrow({
+      where: { id: listing.id },
+      select: { carPriceUzs: true, minMonthlyPaymentUzs: true },
+    })
+    const current = Number(agg.carPriceUzs)
+    const dropped = listingIndex % 6 === 0
+    const oldPrice = Math.round((current * 1.04) / 1_000_000) * 1_000_000
+    await prisma.priceHistory.create({
+      data: {
+        listingId: listing.id,
+        priceUzs: dropped ? oldPrice : current,
+        createdAt: publishedAt,
+      },
+    })
+    if (dropped) {
+      await prisma.priceHistory.create({
+        data: { listingId: listing.id, priceUzs: current, monthlyUzs: agg.minMonthlyPaymentUzs },
+      })
+      await prisma.listing.update({
+        where: { id: listing.id },
+        data: { previousPriceUzs: oldPrice, priceChangedAt: new Date(Date.now() - between(1, 5) * 3_600_000) },
+      })
+    }
     createdListings.push(listing)
   }
   console.log(`   ${createdListings.length} ta eʼlon (rasm + toʻlov shartlari + grafik)`)
@@ -459,6 +508,70 @@ async function main() {
   }
 
   console.log(`   ${leadCount} ta ariza, sharhlar va sevimlilar`)
+
+  // ── 8. Saqlangan qidiruvlar va bildirishnomalar (demo) ─────
+  await prisma.savedSearch.createMany({
+    data: [
+      { userId: buyers[0].id, name: 'Toshkent · oyiga 5 mln gacha', query: 'monthlyMax=5000000&region=toshkent-shahri', frequency: 'INSTANT' },
+      { userId: buyers[0].id, name: 'BYD gibrid · 36 oy', query: 'brand=byd&fuel=HYBRID&termMin=36', frequency: 'WEEKLY' },
+    ],
+  })
+  const dropListing = await prisma.listing.findFirst({
+    where: { previousPriceUzs: { not: null } },
+    select: { id: true, slug: true, title: true, previousPriceUzs: true, carPriceUzs: true },
+  })
+  const demoNotes: Prisma.NotificationCreateManyInput[] = []
+  if (dropListing) {
+    await prisma.favorite
+      .create({ data: { userId: buyers[0].id, listingId: dropListing.id } })
+      .catch(() => {})
+    demoNotes.push({
+      userId: buyers[0].id,
+      type: 'PRICE_DROP',
+      title: 'Saqlangan eʼloningiz narxi arzonlashdi!',
+      body: `${dropListing.title} narxi tushdi.`,
+      link: `/elon/${dropListing.slug}`,
+      listingId: dropListing.id,
+      data: {
+        tpl: 'priceDrop',
+        vars: { listing: dropListing.title },
+        oldPriceUzs: Number(dropListing.previousPriceUzs),
+        newPriceUzs: Number(dropListing.carPriceUzs),
+      },
+      createdAt: new Date(Date.now() - 15 * 60_000),
+    })
+  }
+  demoNotes.push(
+    {
+      userId: buyers[0].id,
+      type: 'LEAD_STATUS',
+      title: 'Arizangiz holati: Tasdiqlandi',
+      body: 'Diler arizangizni koʻrib chiqdi va siz bilan tez orada bogʻlanadi.',
+      link: '/elonlar',
+      data: { tpl: 'leadStatus', vars: { listing: dropListing?.title ?? 'Chevrolet Cobalt' }, status: 'APPROVED' },
+      createdAt: new Date(Date.now() - 60 * 60_000),
+    },
+    {
+      userId: arendators[0].id,
+      type: 'LEAD_NEW',
+      title: 'Eʼloningiz boʻyicha yangi xaridor arizasi!',
+      body: `${buyers[1].fullName} 36 oylik muddatli toʻlov boʻyicha ariza qoldirdi.`,
+      link: '/kabinet/arizalar',
+      data: { tpl: 'leadNew', vars: { name: buyers[1].fullName, listing: dropListing?.title ?? 'Chevrolet Cobalt' } },
+      createdAt: new Date(Date.now() - 3 * 3_600_000),
+    },
+    {
+      userId: arendators[0].id,
+      type: 'SYSTEM',
+      title: 'Haftalik eʼlonlar statistikasi tayyor',
+      body: 'Oʻtgan haftada eʼlonlaringiz koʻrishlar soni oshdi. Kabinetda batafsil koʻring.',
+      link: '/kabinet',
+      data: { tpl: 'weeklyStats', vars: {} },
+      readAt: new Date(),
+      createdAt: new Date(Date.now() - 26 * 3_600_000),
+    },
+  )
+  await prisma.notification.createMany({ data: demoNotes })
 
   // ── Yakun ──────────────────────────────────────────────────
   const stats = {

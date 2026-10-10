@@ -1,24 +1,43 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidateLocalized } from '@/i18n/revalidate'
 import { nanoid } from 'nanoid'
 import { prisma } from '@/lib/prisma'
-import { getActionUserWithRole, getActionUser } from '@/lib/auth/guards'
+import { getActionUser } from '@/lib/auth/guards'
 import { slugify } from '@/lib/utils'
 import { deleteImage } from '@/lib/storage'
 import { LISTING_ACTIVE_DAYS } from '@/lib/constants'
-import { listingSchema } from '@/lib/validation/listing'
+import { listingSchema, type ListingOutput } from '@/lib/validation/listing'
 import { getRates } from '@/server/exchange'
 import {
   recalcListingAggregates,
   recalcProfileCounters,
   syncPlans,
 } from '@/server/plan-service'
+import { recordPriceChange } from '@/server/notifications'
 import { errorState, fromZodError, successState, type ActionState } from './types'
+import { getRequestMessages } from '@/i18n/action'
+
+/** Javob matnlari foydalanuvchi tilida */
+const msg = async () => (await getRequestMessages()).server
 
 /** Bir xil sarlavhali e'lonlar bo'lsa ham slug takrorlanmasligi uchun */
 function buildSlug(title: string): string {
   return `${slugify(title) || 'elon'}-${nanoid(6).toLowerCase()}`
+}
+
+/** Dizayn v2 maydonlari — yaratish va yangilashda bir xil */
+function v2Fields(data: ListingOutput) {
+  return {
+    telegram: data.telegram ?? null,
+    latitude: data.latitude ?? null,
+    longitude: data.longitude ?? null,
+    features: data.features,
+    hasCashSale: data.hasCashSale,
+    cashPrice: data.hasCashSale ? (data.cashPrice ?? null) : null,
+    cashCurrency: data.cashCurrency,
+    isNegotiable: data.isNegotiable,
+  }
 }
 
 export interface SavedListing {
@@ -40,7 +59,12 @@ export async function saveListingAction(
   const data = parsed.data
 
   try {
-    const user = await getActionUserWithRole(['ARENDATOR', 'ADMIN'])
+    // Jismoniy shaxs ham e'lon bera oladi — birinchi e'londa unga
+    // e'lon beruvchi (ARENDATOR) huquqlari ochiladi.
+    const user = await getActionUser()
+    if (user.role === 'USER') {
+      await prisma.user.update({ where: { id: user.id }, data: { role: 'ARENDATOR' } })
+    }
     const rates = await getRates()
 
     // Ma'lumotnoma bog'liqliklarini tekshiramiz
@@ -52,12 +76,12 @@ export async function saveListingAction(
       prisma.region.findUnique({ where: { id: data.regionId }, select: { id: true } }),
     ])
     if (!model || model.brandId !== data.brandId) {
-      return errorState('Tanlangan model markaga mos kelmadi', {
-        modelId: ['Modelni qayta tanlang'],
+      return errorState((await msg()).listing.modelMismatch, {
+        modelId: [(await msg()).listing.modelReselect],
       })
     }
     if (!region) {
-      return errorState('Viloyat topilmadi', { regionId: ['Viloyatni tanlang'] })
+      return errorState((await msg()).listing.regionNotFound, { regionId: ['Viloyatni tanlang'] })
     }
 
     let listingId = data.id ?? null
@@ -69,12 +93,13 @@ export async function saveListingAction(
         where: { id: listingId },
         select: {
           id: true, ownerId: true, status: true, slug: true, title: true,
+          carPriceUzs: true,
           images: { select: { id: true, url: true } },
         },
       })
-      if (!existing) return errorState('Eʼlon topilmadi')
+      if (!existing) return errorState((await msg()).errors.listingNotFound)
       if (existing.ownerId !== user.id && user.role !== 'ADMIN') {
-        return errorState('Bu eʼlonni tahrirlashga ruxsatingiz yoʻq')
+        return errorState((await msg()).listing.noEditRights)
       }
 
       const incomingUrls = new Set(data.images.map((i) => i.url))
@@ -113,6 +138,7 @@ export async function saveListingAction(
             address: data.address ?? null,
             contactPhone: data.contactPhone,
             contactName: data.contactName ?? null,
+            ...v2Fields(data),
             status: nextStatus,
             rejectReason: null,
             images: {
@@ -129,7 +155,19 @@ export async function saveListingAction(
         })
 
         await syncPlans(tx, listingId!, data.plans, rates)
-        await recalcListingAggregates(tx, listingId!)
+        await recalcListingAggregates(tx, listingId!, rates)
+
+        const after = await tx.listing.findUniqueOrThrow({
+          where: { id: listingId! },
+          select: { carPriceUzs: true, minMonthlyPaymentUzs: true },
+        })
+        await recordPriceChange(
+          tx,
+          { id: existing.id, slug: existing.slug, title: data.title, status: nextStatus },
+          existing.carPriceUzs === null ? null : Number(existing.carPriceUzs),
+          after.carPriceUzs === null ? null : Number(after.carPriceUzs),
+          after.minMonthlyPaymentUzs === null ? null : Number(after.minMonthlyPaymentUzs),
+        )
       })
     } else {
       // ── Yaratish ──
@@ -158,6 +196,7 @@ export async function saveListingAction(
             address: data.address ?? null,
             contactPhone: data.contactPhone,
             contactName: data.contactName ?? null,
+            ...v2Fields(data),
             status,
             images: {
               create: data.images.map((img, i) => ({
@@ -174,7 +213,22 @@ export async function saveListingAction(
         })
 
         await syncPlans(tx, listing.id, data.plans, rates)
-        await recalcListingAggregates(tx, listing.id)
+        await recalcListingAggregates(tx, listing.id, rates)
+
+        // Narx tarixining birinchi nuqtasi
+        const after = await tx.listing.findUniqueOrThrow({
+          where: { id: listing.id },
+          select: { carPriceUzs: true, minMonthlyPaymentUzs: true },
+        })
+        if (after.carPriceUzs !== null) {
+          await tx.priceHistory.create({
+            data: {
+              listingId: listing.id,
+              priceUzs: after.carPriceUzs,
+              monthlyUzs: after.minMonthlyPaymentUzs,
+            },
+          })
+        }
         return listing
       })
 
@@ -190,25 +244,22 @@ export async function saveListingAction(
       select: { id: true, slug: true, status: true },
     })
 
-    revalidatePath('/kabinet/elonlarim')
-    revalidatePath('/elonlar')
-    revalidatePath(`/elon/${saved.slug}`)
+    revalidateLocalized('/kabinet/elonlarim')
+    revalidateLocalized('/elonlar')
+    revalidateLocalized(`/elon/${saved.slug}`)
 
     return successState(
       data.publish
-        ? 'Eʼlon saqlandi va moderatsiyaga yuborildi'
-        : 'Qoralama saqlandi',
+        ? (await msg()).listing.saved
+        : (await msg()).listing.draftSaved,
       saved,
     )
   } catch (error) {
     if (error instanceof Error && error.name === 'AuthError') {
-      return errorState('Avtorizatsiya muddati tugadi. Qaytadan kiring.')
-    }
-    if (error instanceof Error && error.name === 'ForbiddenError') {
-      return errorState('Eʼlon joylash uchun arendator hisobi kerak')
+      return errorState((await msg()).errors.authExpired)
     }
     console.error('saveListingAction:', error)
-    return errorState('Eʼlonni saqlab boʻlmadi. Qayta urinib koʻring.')
+    return errorState((await msg()).listing.saveFailed)
   }
 }
 
@@ -223,9 +274,9 @@ export async function changeListingStatusAction(
       where: { id: listingId },
       select: { id: true, ownerId: true, status: true, publishedAt: true },
     })
-    if (!listing) return errorState('Eʼlon topilmadi')
+    if (!listing) return errorState((await msg()).errors.listingNotFound)
     if (listing.ownerId !== user.id && user.role !== 'ADMIN') {
-      return errorState('Ruxsat yoʻq')
+      return errorState((await msg()).errors.forbidden)
     }
 
     // Rad etilgan e'lon qayta yoqilsa, avval moderatsiyadan o'tadi
@@ -251,19 +302,20 @@ export async function changeListingStatusAction(
     })
 
     await recalcProfileCounters(prisma, listing.ownerId)
-    revalidatePath('/kabinet/elonlarim')
-    revalidatePath('/elonlar')
+    revalidateLocalized('/kabinet/elonlarim')
+    revalidateLocalized('/elonlar')
 
+    const t = (await msg()).listing
     const messages = {
-      pause: 'Eʼlon vaqtincha toʻxtatildi',
-      activate: 'Eʼlon faollashtirildi',
-      archive: 'Eʼlon arxivlandi',
-      rented: 'Eʼlon "berilgan" deb belgilandi',
+      pause: t.paused,
+      activate: t.activated,
+      archive: t.archived,
+      rented: t.rented,
     }
     return successState(messages[action])
   } catch (error) {
     console.error('changeListingStatusAction:', error)
-    return errorState('Holatni oʻzgartirib boʻlmadi')
+    return errorState((await msg()).listing.statusFailed)
   }
 }
 
@@ -280,20 +332,40 @@ export async function deleteListingAction(
         images: { select: { url: true } },
       },
     })
-    if (!listing) return errorState('Eʼlon topilmadi')
+    if (!listing) return errorState((await msg()).errors.listingNotFound)
     if (listing.ownerId !== user.id && user.role !== 'ADMIN') {
-      return errorState('Ruxsat yoʻq')
+      return errorState((await msg()).errors.forbidden)
     }
 
     await prisma.listing.delete({ where: { id: listingId } })
     await Promise.all(listing.images.map((i) => deleteImage(i.url)))
     await recalcProfileCounters(prisma, listing.ownerId)
 
-    revalidatePath('/kabinet/elonlarim')
-    revalidatePath('/elonlar')
-    return successState('Eʼlon oʻchirildi')
+    revalidateLocalized('/kabinet/elonlarim')
+    revalidateLocalized('/elonlar')
+    return successState((await msg()).listing.deleted)
   } catch (error) {
     console.error('deleteListingAction:', error)
-    return errorState('Eʼlonni oʻchirib boʻlmadi')
+    return errorState((await msg()).listing.deleteFailed)
+  }
+}
+
+/**
+ * "Raqamni ko'rsatish" bosilganda hisoblagich oshadi — e'lon egasi
+ * kabinetda nechta xaridor qiziqqanini ko'radi. Raqamning o'zi qaytariladi,
+ * shuning uchun u sahifa HTML'ida ochiq turmaydi (botlardan himoya).
+ */
+export async function revealPhoneAction(
+  listingId: string,
+): Promise<{ ok: boolean; phone?: string; telegram?: string | null }> {
+  try {
+    const listing = await prisma.listing.update({
+      where: { id: listingId, status: 'ACTIVE' },
+      data: { phoneRevealCount: { increment: 1 } },
+      select: { contactPhone: true, telegram: true },
+    })
+    return { ok: true, phone: listing.contactPhone, telegram: listing.telegram }
+  } catch {
+    return { ok: false }
   }
 }

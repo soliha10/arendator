@@ -6,6 +6,7 @@ import type { ListingFilters } from '@/lib/validation/filters'
 import {
   LISTING_CARD_SELECT,
   PLAN_SELECT,
+  cardExtras,
   dec,
   toListingCardDto,
   toPlanDto,
@@ -74,8 +75,15 @@ export function buildListingWhere(f: ListingFilters): Prisma.ListingWhereInput {
   if (f.mileageMax !== undefined) AND.push({ mileage: { lte: f.mileageMax } })
 
   if (f.planType.length) {
-    AND.push({ plans: { some: { planType: { in: f.planType } } } })
+    // CASH — to'lov sharti emas, e'lonning o'z belgisi
+    const types = f.planType.filter((t) => t !== 'CASH') as ('INSTALLMENT' | 'RENT' | 'LEASING')[]
+    const OR: Prisma.ListingWhereInput[] = []
+    if (types.length) OR.push({ plans: { some: { planType: { in: types } } } })
+    if (f.planType.includes('CASH')) OR.push({ hasCashSale: true })
+    AND.push({ OR })
   }
+  if (f.features.length) AND.push({ features: { hasEvery: f.features } })
+  if (f.priceDrop) AND.push({ previousPriceUzs: { not: null } })
   if (f.insurance) {
     AND.push({ plans: { some: { insuranceIncluded: true } } })
   }
@@ -89,27 +97,29 @@ export function buildListingWhere(f: ListingFilters): Prisma.ListingWhereInput {
 function buildOrderBy(
   sort: ListingFilters['sort'],
 ): Prisma.ListingOrderByWithRelationInput[] {
-  const featuredFirst: Prisma.ListingOrderByWithRelationInput = {
-    isFeatured: 'desc',
-  }
+  // TOP > VIP > NONE (enum tartibi bo'yicha desc), keyin admin tanlagan e'lonlar
+  const featuredFirst: Prisma.ListingOrderByWithRelationInput[] = [
+    { promotion: 'desc' },
+    { isFeatured: 'desc' },
+  ]
   switch (sort) {
     case 'monthly_asc':
-      return [featuredFirst, { minMonthlyPaymentUzs: { sort: 'asc', nulls: 'last' } }]
+      return [...featuredFirst, { minMonthlyPaymentUzs: { sort: 'asc', nulls: 'last' } }]
     case 'monthly_desc':
-      return [featuredFirst, { minMonthlyPaymentUzs: { sort: 'desc', nulls: 'last' } }]
+      return [...featuredFirst, { minMonthlyPaymentUzs: { sort: 'desc', nulls: 'last' } }]
     case 'down_asc':
-      return [featuredFirst, { minDownPaymentUzs: { sort: 'asc', nulls: 'last' } }]
+      return [...featuredFirst, { minDownPaymentUzs: { sort: 'asc', nulls: 'last' } }]
     case 'price_asc':
-      return [featuredFirst, { carPriceUzs: { sort: 'asc', nulls: 'last' } }]
+      return [...featuredFirst, { carPriceUzs: { sort: 'asc', nulls: 'last' } }]
     case 'price_desc':
-      return [featuredFirst, { carPriceUzs: { sort: 'desc', nulls: 'last' } }]
+      return [...featuredFirst, { carPriceUzs: { sort: 'desc', nulls: 'last' } }]
     case 'year_desc':
-      return [featuredFirst, { year: 'desc' }]
+      return [...featuredFirst, { year: 'desc' }]
     case 'popular':
-      return [featuredFirst, { viewCount: 'desc' }]
+      return [...featuredFirst, { viewCount: 'desc' }]
     case 'newest':
     default:
-      return [featuredFirst, { publishedAt: { sort: 'desc', nulls: 'last' } }]
+      return [...featuredFirst, { publishedAt: { sort: 'desc', nulls: 'last' } }]
   }
 }
 
@@ -121,9 +131,23 @@ export interface ListingSearchResult {
   pageCount: number
 }
 
+/**
+ * Muddati tugagan VIP/TOP'ni oddiy holatga qaytaradi. Cron kerak emas —
+ * katalog o'qilganda arzon `updateMany` (odatda 0 qator) ishlaydi.
+ */
+const expirePromotions = cache(async () => {
+  await prisma.listing
+    .updateMany({
+      where: { promotion: { not: 'NONE' }, promotedUntil: { lt: new Date() } },
+      data: { promotion: 'NONE', promotedUntil: null },
+    })
+    .catch(() => {})
+})
+
 export async function searchListings(
   f: ListingFilters,
 ): Promise<ListingSearchResult> {
+  await expirePromotions()
   const where = buildListingWhere(f)
   const skip = (f.page - 1) * f.perPage
 
@@ -157,6 +181,19 @@ const DETAIL_SELECT = {
   address: true,
   contactPhone: true,
   contactName: true,
+  telegram: true,
+  latitude: true,
+  longitude: true,
+  cashPrice: true,
+  cashCurrency: true,
+  leadCount: true,
+  phoneRevealCount: true,
+  priceChangedAt: true,
+  priceHistory: {
+    orderBy: { createdAt: 'asc' },
+    take: 24,
+    select: { priceUzs: true, createdAt: true },
+  },
   status: true,
   favoriteCount: true,
   images: {
@@ -173,10 +210,12 @@ const DETAIL_SELECT = {
   owner: {
     select: {
       id: true, fullName: true, phone: true, createdAt: true,
+      accountType: true, telegram: true,
       profile: {
         select: {
           companyName: true, slug: true, logoUrl: true, isVerified: true,
           ratingAvg: true, reviewCount: true, listingCount: true,
+          address: true, telegram: true, workingHours: true, tags: true,
         },
       },
     },
@@ -191,8 +230,6 @@ export async function getListingBySlug(
     select: DETAIL_SELECT,
   })
   if (!l) return null
-
-  const cover = l.images[0] ?? null
 
   return {
     id: l.id,
@@ -212,9 +249,22 @@ export async function getListingBySlug(
     brandName: l.brand.name,
     modelName: l.model.name,
     regionName: l.region.name,
+    regionSlug: l.region.slug,
     address: l.address,
     contactPhone: l.contactPhone,
     contactName: l.contactName,
+    telegram: l.telegram,
+    latitude: l.latitude,
+    longitude: l.longitude,
+    cashPrice: dec(l.cashPrice),
+    cashCurrency: l.cashCurrency,
+    leadCount: l.leadCount,
+    phoneRevealCount: l.phoneRevealCount,
+    priceChangedAt: l.priceChangedAt ? l.priceChangedAt.toISOString() : null,
+    priceHistory: l.priceHistory.map((h) => ({
+      priceUzs: Number(h.priceUzs),
+      createdAt: h.createdAt.toISOString(),
+    })),
     status: l.status,
     images: l.images.map((i) => ({
       id: i.id, url: i.url, width: i.width, height: i.height,
@@ -237,6 +287,9 @@ export async function getListingBySlug(
     ownerVerified: l.owner.profile?.isVerified ?? false,
     ownerName: l.owner.profile?.companyName ?? l.owner.fullName,
     ownerSlug: l.owner.profile?.slug ?? null,
+    ownerLogoUrl: l.owner.profile?.logoUrl ?? null,
+    ownerPhone: l.contactPhone,
+    ...cardExtras(l),
     owner: {
       id: l.owner.id,
       fullName: l.owner.fullName,
@@ -249,9 +302,12 @@ export async function getListingBySlug(
       reviewCount: l.owner.profile?.reviewCount ?? 0,
       listingCount: l.owner.profile?.listingCount ?? 0,
       createdAt: l.owner.createdAt.toISOString(),
+      address: l.owner.profile?.address ?? null,
+      telegram: l.owner.profile?.telegram ?? l.owner.telegram ?? null,
+      workingHours: l.owner.profile?.workingHours ?? null,
+      tags: l.owner.profile?.tags ?? [],
+      accountType: l.owner.accountType,
     },
-    // cover kartada ishlatiladi; detalda images[] to'liq keladi
-    ...(cover ? {} : {}),
   }
 }
 
@@ -271,6 +327,40 @@ export async function getListingsForCompare(
     .map((id) => bySlug.find((d) => d.id === id))
     .filter((d): d is ListingDetailDto => d !== undefined)
 }
+
+/** Bosh sahifa: avval TOP/VIP, keyin tanlangan va eng yangi e'lonlar */
+export async function getFeaturedListings(limit = 6): Promise<ListingCardDto[]> {
+  await expirePromotions()
+  const rows = await prisma.listing.findMany({
+    where: { status: 'ACTIVE' },
+    select: LISTING_CARD_SELECT,
+    orderBy: [
+      { promotion: 'desc' },
+      { isFeatured: 'desc' },
+      { publishedAt: { sort: 'desc', nulls: 'last' } },
+    ],
+    take: limit,
+  })
+  return rows.map(toListingCardDto)
+}
+
+/** Bosh sahifa: eʼlonlar soni har bir yo'nalish bo'yicha (haqiqiy raqamlar) */
+export const getMarketStats = cache(async () => {
+  const active = { status: 'ACTIVE' as const }
+  const [total, rent, installment, leasing, cash, electric, fresh, dealers, priceDrops] =
+    await Promise.all([
+      prisma.listing.count({ where: active }),
+      prisma.listing.count({ where: { ...active, hasRent: true } }),
+      prisma.listing.count({ where: { ...active, plans: { some: { planType: 'INSTALLMENT' } } } }),
+      prisma.listing.count({ where: { ...active, plans: { some: { planType: 'LEASING' } } } }),
+      prisma.listing.count({ where: { ...active, hasCashSale: true } }),
+      prisma.listing.count({ where: { ...active, fuelType: { in: ['ELECTRIC', 'HYBRID'] } } }),
+      prisma.listing.count({ where: { ...active, condition: 'NEW' } }),
+      prisma.arendatorProfile.count({ where: { isVerified: true } }),
+      prisma.listing.count({ where: { ...active, previousPriceUzs: { not: null } } }),
+    ])
+  return { total, rent, installment, leasing, cash, electric, fresh, dealers, priceDrops }
+})
 
 /** Bosh sahifa uchun eng so'nggi e'lonlar */
 export async function getLatestListings(limit = 8): Promise<ListingCardDto[]> {

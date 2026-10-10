@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useMessages } from '@/i18n/client'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -56,9 +57,9 @@ export function ThemeToggle({ className }: { className?: string }) {
     writeTheme(next)
   }
 
+  const t = useMessages().common.theme
   const Icon = theme === 'light' ? Sun : theme === 'dark' ? Moon : Monitor
-  const label =
-    theme === 'light' ? 'Yorugʻ rejim' : theme === 'dark' ? 'Qorongʻi rejim' : 'Tizim rejimi'
+  const label = theme === 'light' ? t.light : theme === 'dark' ? t.dark : t.system
 
   return (
     <button
@@ -73,5 +74,40 @@ export function ThemeToggle({ className }: { className?: string }) {
     >
       <Icon className="size-[18px]" />
     </button>
+  )
+}
+
+/**
+ * Menyu uchun aniq tanlov: Yorug' / Qorong'i / Tizim — telefonda
+ * aylanma tugmadan ko'ra tushunarliroq.
+ */
+export function ThemeSwitch({ className }: { className?: string }) {
+  const theme = React.useSyncExternalStore(subscribeTheme, readTheme, () => 'system' as Theme)
+  const t = useMessages().common.theme
+  const options = [
+    { value: 'light' as const, icon: Sun, label: t.light },
+    { value: 'dark' as const, icon: Moon, label: t.dark },
+    { value: 'system' as const, icon: Monitor, label: t.system },
+  ]
+  return (
+    <div role="radiogroup" className={cn('grid grid-cols-3 gap-1 rounded-lg bg-surface-2 p-1', className)}>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={theme === o.value}
+          aria-label={o.label}
+          title={o.label}
+          onClick={() => writeTheme(o.value)}
+          className={cn(
+            'flex h-9 items-center justify-center rounded-md transition-colors',
+            theme === o.value ? 'bg-surface text-primary shadow-sm' : 'text-muted hover:text-text',
+          )}
+        >
+          <o.icon className="size-[18px]" aria-hidden />
+        </button>
+      ))}
+    </div>
   )
 }

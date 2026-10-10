@@ -2,10 +2,10 @@
 
 import * as React from 'react'
 import { RotateCcw, SlidersHorizontal, X } from 'lucide-react'
-import {
-  BODY_TYPE_LABELS, CONDITION_LABELS, DRIVE_TYPE_LABELS,
-  FUEL_TYPE_LABELS, PLAN_TYPE_LABELS, TERM_OPTIONS, TRANSMISSION_LABELS,
-} from '@/lib/constants'
+import { DEAL_TYPES, FEATURE_OPTIONS, TERM_OPTIONS } from '@/lib/constants'
+import { useLocale, useMessages } from '@/i18n/client'
+import { fmt, plural } from '@/i18n/format'
+import type { Messages } from '@/i18n/messages'
 import { CheckboxRow } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -29,6 +29,16 @@ export interface FiltersData {
 }
 
 const CURRENT_YEAR = new Date().getFullYear()
+
+/** Bitim turlari (to'lov shartlari + naqd sotuv) — joriy tilda */
+export function dealTypeLabels(m: Messages): Record<string, string> {
+  return Object.fromEntries(DEAL_TYPES.map((d) => [d.value, m.enums.dealType[d.value]]))
+}
+
+/** Qulayliklar — FEATURE_OPTIONS tartibida, joriy tilda */
+export function featureLabels(m: Messages): Record<string, string> {
+  return Object.fromEntries(FEATURE_OPTIONS.map((f) => [f.key, m.enums.feature[f.key]]))
+}
 
 function EnumFilter({
   paramKey,
@@ -71,6 +81,7 @@ function SearchableList({
   searchPlaceholder: string
   limit?: number
 }) {
+  const t = useMessages().catalog.filters
   const [query, setQuery] = React.useState('')
   const [expanded, setExpanded] = React.useState(false)
 
@@ -112,7 +123,7 @@ function SearchableList({
           />
         ))}
         {visible.length === 0 ? (
-          <p className="px-1.5 py-2 text-[13px] text-subtle">Topilmadi</p>
+          <p className="px-1.5 py-2 text-[13px] text-subtle">{t.notFound}</p>
         ) : null}
       </div>
 
@@ -122,7 +133,7 @@ function SearchableList({
           onClick={() => setExpanded((v) => !v)}
           className="mt-1.5 px-1.5 text-[13px] font-medium text-primary hover:underline"
         >
-          {expanded ? 'Yigʻish' : `Yana ${filtered.length - limit} ta`}
+          {expanded ? t.collapse : fmt(t.more, { n: filtered.length - limit })}
         </button>
       ) : null}
     </div>
@@ -131,6 +142,9 @@ function SearchableList({
 
 function FiltersBody({ data }: { data: FiltersData }) {
   const { get, getList, setParam, toggleInList, clearAll } = useFilters()
+  const m = useMessages()
+  const t = m.catalog.filters
+  const range = { placeholderMin: t.from, placeholderMax: t.to, unit: t.mln }
 
   const selectedBrands = getList('brand')
   const selectedModels = getList('model')
@@ -147,119 +161,122 @@ function FiltersBody({ data }: { data: FiltersData }) {
 
   return (
     <div className="divide-y divide-border">
-      <FilterSection title="Toʻlov turi" count={getList('planType').length}>
+      <FilterSection title={t.dealType} count={getList('planType').length}>
         <EnumFilter
           paramKey="planType"
-          labels={PLAN_TYPE_LABELS}
+          labels={dealTypeLabels(m)}
           selected={getList('planType')}
           onToggle={toggleInList}
         />
       </FilterSection>
 
-      <FilterSection title="Oylik toʻlov">
+      <FilterSection title={t.monthly}>
         <MoneyRange
           minKey="monthlyMin"
           maxKey="monthlyMax"
           minValue={get('monthlyMin')}
           maxValue={get('monthlyMax')}
           onChange={setParam}
+          {...range}
         />
         <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {[3, 5, 8, 12].map((m) => (
+          {[3, 5, 8, 12].map((mln) => (
             <button
-              key={m}
+              key={mln}
               type="button"
-              onClick={() => setParam('monthlyMax', String(m * 1_000_000))}
+              onClick={() => setParam('monthlyMax', String(mln * 1_000_000))}
               className={cn(
-                'inline-flex min-h-9 items-center rounded-full border px-3 text-[12px] transition-colors',
-                get('monthlyMax') === String(m * 1_000_000)
-                  ? 'border-primary bg-primary-soft text-primary'
-                  : 'border-border text-muted hover:border-border-strong',
+                'inline-flex min-h-9 items-center rounded-lg px-3 text-[12px] font-medium transition-colors',
+                get('monthlyMax') === String(mln * 1_000_000)
+                  ? 'bg-primary text-primary-fg'
+                  : 'bg-surface-2 text-text hover:bg-surface-3',
               )}
             >
-              {m} mln gacha
+              {fmt(t.monthlyChip, { n: mln })}
             </button>
           ))}
         </div>
       </FilterSection>
 
-      <FilterSection title="Boshlangʻich toʻlov">
+      <FilterSection title={t.down}>
         <MoneyRange
           minKey="downMin"
           maxKey="downMax"
           minValue={get('downMin')}
           maxValue={get('downMax')}
           onChange={setParam}
+          {...range}
         />
       </FilterSection>
 
-      <FilterSection title="Avtomobil narxi" defaultOpen={false}>
+      <FilterSection title={t.price} defaultOpen={false}>
         <MoneyRange
           minKey="priceMin"
           maxKey="priceMax"
           minValue={get('priceMin')}
           maxValue={get('priceMax')}
           onChange={setParam}
+          {...range}
         />
       </FilterSection>
 
-      <FilterSection title="Muddat">
+      <FilterSection title={t.term}>
         <div className="flex flex-wrap gap-1.5">
-          {TERM_OPTIONS.map((t) => {
-            const active = get('termMin') === String(t)
+          {TERM_OPTIONS.map((months) => {
+            const active = get('termMin') === String(months)
             return (
               <button
-                key={t}
+                key={months}
                 type="button"
-                onClick={() => setParam('termMin', active ? '' : String(t))}
+                onClick={() => setParam('termMin', active ? '' : String(months))}
                 className={cn(
-                  'inline-flex min-h-9 items-center rounded-full border px-3.5 text-[12px] font-medium transition-colors',
+                  'inline-flex min-h-9 items-center rounded-lg px-3.5 text-[12px] font-medium transition-colors',
                   active
-                    ? 'border-primary bg-primary-soft text-primary'
-                    : 'border-border text-muted hover:border-border-strong',
+                    ? 'bg-primary text-primary-fg'
+                    : 'bg-surface-2 text-text hover:bg-surface-3',
                 )}
               >
-                {t} oydan
+                {fmt(t.termChip, { n: months })}
               </button>
             )
           })}
         </div>
       </FilterSection>
 
-      <FilterSection title="Marka" count={selectedBrands.length}>
+      <FilterSection title={t.brand} count={selectedBrands.length}>
         <SearchableList
           options={data.brands}
           selected={selectedBrands}
           onToggle={toggleInList}
           paramKey="brand"
-          searchPlaceholder="Marka qidirish…"
+          searchPlaceholder={t.brandSearch}
         />
       </FilterSection>
 
       {availableModels.length > 0 ? (
-        <FilterSection title="Model" count={selectedModels.length}>
+        <FilterSection title={t.model} count={selectedModels.length}>
           <SearchableList
             options={availableModels}
             selected={selectedModels}
             onToggle={toggleInList}
             paramKey="model"
-            searchPlaceholder="Model qidirish…"
+            searchPlaceholder={t.modelSearch}
             limit={10}
           />
         </FilterSection>
       ) : null}
 
-      <FilterSection title="Viloyat" count={getList('region').length}>
+      <FilterSection title={t.region} count={getList('region').length}>
         <SearchableList
           options={data.regions}
           selected={getList('region')}
           onToggle={toggleInList}
           paramKey="region"
-          searchPlaceholder="Viloyat qidirish…"
+          searchPlaceholder={t.regionSearch}
         />
       </FilterSection>
 
-      <FilterSection title="Ishlab chiqarilgan yil" defaultOpen={false}>
+      <FilterSection title={t.year} defaultOpen={false}>
         <MoneyRange
           minKey="yearMin"
           maxKey="yearMax"
@@ -273,69 +290,83 @@ function FiltersBody({ data }: { data: FiltersData }) {
         />
       </FilterSection>
 
-      <FilterSection title="Holati" defaultOpen={false}>
+      <FilterSection title={t.condition} defaultOpen={false}>
         <EnumFilter
           paramKey="condition"
-          labels={CONDITION_LABELS}
+          labels={m.enums.condition}
           selected={getList('condition')}
           onToggle={toggleInList}
         />
       </FilterSection>
 
-      <FilterSection title="Kuzov" defaultOpen={false}>
+      <FilterSection title={t.body} defaultOpen={false}>
         <EnumFilter
           paramKey="body"
-          labels={BODY_TYPE_LABELS}
+          labels={m.enums.bodyType}
           selected={getList('body')}
           onToggle={toggleInList}
         />
       </FilterSection>
 
-      <FilterSection title="Uzatmalar qutisi" defaultOpen={false}>
+      <FilterSection title={t.transmission} defaultOpen={false}>
         <EnumFilter
           paramKey="transmission"
-          labels={TRANSMISSION_LABELS}
+          labels={m.enums.transmission}
           selected={getList('transmission')}
           onToggle={toggleInList}
         />
       </FilterSection>
 
-      <FilterSection title="Yoqilgʻi" defaultOpen={false}>
+      <FilterSection title={t.fuel} defaultOpen={false}>
         <EnumFilter
           paramKey="fuel"
-          labels={FUEL_TYPE_LABELS}
+          labels={m.enums.fuelType}
           selected={getList('fuel')}
           onToggle={toggleInList}
         />
       </FilterSection>
 
-      <FilterSection title="Uzatma" defaultOpen={false}>
+      <FilterSection title={t.drive} defaultOpen={false}>
         <EnumFilter
           paramKey="drive"
-          labels={DRIVE_TYPE_LABELS}
+          labels={m.enums.driveTypeLong}
           selected={getList('drive')}
           onToggle={toggleInList}
         />
       </FilterSection>
 
-      <FilterSection title="Qoʻshimcha" defaultOpen={false}>
+      <FilterSection title={t.features} count={getList('features').length} defaultOpen={false}>
+        <EnumFilter
+          paramKey="features"
+          labels={featureLabels(m)}
+          selected={getList('features')}
+          onToggle={toggleInList}
+        />
+      </FilterSection>
+
+      <FilterSection title={t.extra}>
         <div className="space-y-0.5">
+          <CheckboxRow
+            checked={get('priceDrop') === '1'}
+            onCheckedChange={(v) => setParam('priceDrop', v ? '1' : '')}
+            label={t.priceDropOnly}
+          />
           <CheckboxRow
             checked={get('verified') === '1'}
             onCheckedChange={(v) => setParam('verified', v ? '1' : '')}
-            label="Faqat tasdiqlangan arendatorlar"
+            label={t.verifiedOnly}
           />
           <CheckboxRow
             checked={get('insurance') === '1'}
             onCheckedChange={(v) => setParam('insurance', v ? '1' : '')}
-            label="Sugʻurta narxga kiritilgan"
+            label={t.insurance}
           />
         </div>
       </FilterSection>
 
       <div className="pt-4">
         <Button variant="outline" block onClick={clearAll}>
-          <RotateCcw /> Filtrlarni tozalash
+          <RotateCcw /> {t.clear}
         </Button>
       </div>
     </div>
@@ -344,9 +375,14 @@ function FiltersBody({ data }: { data: FiltersData }) {
 
 /** Desktop: chapdagi doimiy yon panel */
 export function FiltersSidebar({ data }: { data: FiltersData }) {
+  const t = useMessages().catalog.filters
   return (
     <aside className="hidden lg:block">
-      <div className="card scroll-contain sticky top-[calc(var(--header-h)+1rem)] max-h-[calc(100dvh-var(--header-h)-2rem)] overflow-y-auto px-4 py-2">
+      <div className="scroll-contain sticky top-[calc(var(--header-h)+1rem)] max-h-[calc(100dvh-var(--header-h)-2rem)] overflow-y-auto rounded-xl border border-border bg-surface px-4 py-2 shadow-sm">
+        <div className="flex items-center gap-2 border-b border-border py-3">
+          <SlidersHorizontal className="size-4 text-primary" aria-hidden />
+          <span className="font-display text-[15px] font-bold text-text">{t.title}</span>
+        </div>
         <FiltersBody data={data} />
       </div>
     </aside>
@@ -365,6 +401,8 @@ export function FiltersDrawer({
   resultCount?: number
 }) {
   const [open, setOpen] = React.useState(false)
+  const t = useMessages().catalog.filters
+  const locale = useLocale()
 
   React.useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -377,7 +415,7 @@ export function FiltersDrawer({
     <div className="lg:hidden">
       <Button variant="outline" block onClick={() => setOpen(true)} className="h-11">
         <SlidersHorizontal />
-        Filtrlar
+        {t.title}
         {activeCount > 0 ? (
           <span className="tabular ml-0.5 flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-fg">
             {activeCount}
@@ -390,11 +428,11 @@ export function FiltersDrawer({
           className="fixed inset-0 z-50"
           role="dialog"
           aria-modal="true"
-          aria-label="Filtrlar"
+          aria-label={t.title}
         >
           <button
             type="button"
-            aria-label="Yopish"
+            aria-label={t.close}
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           />
@@ -404,12 +442,12 @@ export function FiltersDrawer({
               <span className="h-1 w-10 rounded-full bg-border-strong" aria-hidden />
             </div>
             <div className="flex items-center justify-between border-b border-border py-1.5 pl-4 pr-2">
-              <span className="text-[15px] font-semibold text-text">Filtrlar</span>
+              <span className="text-[15px] font-semibold text-text">{t.title}</span>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 className="tap inline-flex items-center justify-center rounded-lg text-muted hover:bg-surface-2"
-                aria-label="Yopish"
+                aria-label={t.close}
               >
                 <X className="size-[22px]" aria-hidden />
               </button>
@@ -420,8 +458,8 @@ export function FiltersDrawer({
             <div className="border-t border-border p-4 pb-[calc(1rem+var(--safe-b))]">
               <Button block size="lg" onClick={() => setOpen(false)}>
                 {resultCount !== undefined
-                  ? `${resultCount} ta natijani koʻrish`
-                  : 'Natijalarni koʻrish'}
+                  ? plural(locale, resultCount, t.showResults)
+                  : t.showResultsPlain}
               </Button>
             </div>
           </div>

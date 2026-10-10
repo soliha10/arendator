@@ -52,10 +52,10 @@ export function MoneyRange({
   minValue,
   maxValue,
   onChange,
-  unit = 'mln',
+  unit = '',
   divisor = 1_000_000,
-  placeholderMin = 'dan',
-  placeholderMax = 'gacha',
+  placeholderMin = '',
+  placeholderMax = '',
 }: {
   minKey: string
   maxKey: string
@@ -118,7 +118,7 @@ export function MoneyRange({
             }
           }}
           placeholder={placeholderMin}
-          aria-label={`${placeholderMin} (${unit})`}
+          aria-label={unit ? `${placeholderMin} (${unit})` : placeholderMin}
           className={cn(inputClass, 'pr-9')}
         />
         <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-subtle">
@@ -140,7 +140,7 @@ export function MoneyRange({
             }
           }}
           placeholder={placeholderMax}
-          aria-label={`${placeholderMax} (${unit})`}
+          aria-label={unit ? `${placeholderMax} (${unit})` : placeholderMax}
           className={cn(inputClass, 'pr-9')}
         />
         <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-subtle">

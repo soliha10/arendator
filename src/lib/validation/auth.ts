@@ -14,24 +14,21 @@ export const registerSchema = z
       .transform((v) => (v === '' ? undefined : v))
       .optional(),
     password: passwordSchema,
-    confirmPassword: z.string(),
-    role: z.enum(['USER', 'ARENDATOR']).default('USER'),
+    /** Jismoniy shaxs — xaridor; yuridik — diler/avtosalon (ARENDATOR roli + profil) */
+    accountType: z.enum(['INDIVIDUAL', 'BUSINESS']).default('INDIVIDUAL'),
     companyName: z.string().trim().max(120).optional(),
+    next: z.string().optional(),
     acceptTerms: z
       .union([z.boolean(), z.literal('on')])
       .transform((v) => v === true || v === 'on')
       .refine((v) => v, { message: 'Shartlarga rozilik bildiring' }),
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Parollar mos kelmadi',
-    path: ['confirmPassword'],
-  })
   .refine(
     (data) =>
-      data.role !== 'ARENDATOR' ||
+      data.accountType !== 'BUSINESS' ||
       (data.companyName !== undefined && data.companyName.length >= 2),
     {
-      message: 'Arendator uchun kompaniya/nom kiriting',
+      message: 'Avtosalon yoki kompaniya nomini kiriting',
       path: ['companyName'],
     },
   )

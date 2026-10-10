@@ -1,7 +1,6 @@
 'use server'
 
-import { redirect } from 'next/navigation'
-import { revalidatePath } from 'next/cache'
+import { revalidateLocalized } from '@/i18n/revalidate'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, verifyPassword, fakeVerify } from '@/lib/auth/password'
@@ -19,6 +18,11 @@ import {
   successState,
   type ActionState,
 } from './types'
+import { getRequestMessages, localeRedirect } from '@/i18n/action'
+import { splitLocale } from '@/i18n/config'
+
+/** Javob matnlari foydalanuvchi tilida */
+const msg = async () => (await getRequestMessages()).auth
 
 /** Redirect/notFound ichki xatolarini yutib yubormaslik uchun */
 function isFrameworkError(error: unknown): boolean {
@@ -32,11 +36,15 @@ function isFrameworkError(error: unknown): boolean {
   )
 }
 
-/** Ochiq yo'naltirish (open redirect) hujumidan himoya */
+/**
+ * Ochiq yo'naltirish (open redirect) hujumidan himoya. `next` til
+ * prefiksi bilan ham (/ru/kabinet) kelishi mumkin — prefiks olib
+ * tashlanadi, redirect paytida joriy til qayta qo'shiladi.
+ */
 function safeNext(next: string | undefined | null): string {
   if (!next) return '/kabinet'
-  if (!next.startsWith('/') || next.startsWith('//')) return '/kabinet'
-  return next
+  if (!next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\')) return '/kabinet'
+  return splitLocale(next).path
 }
 
 export async function registerAction(
@@ -46,7 +54,8 @@ export async function registerAction(
   const parsed = registerSchema.safeParse(Object.fromEntries(formData))
   if (!parsed.success) return fromZodError(parsed.error)
 
-  const { fullName, phone, email, password, role, companyName } = parsed.data
+  const { fullName, phone, email, password, accountType, companyName, next } = parsed.data
+  const role = accountType === 'BUSINESS' ? 'ARENDATOR' : 'USER'
 
   try {
     const passwordHash = await hashPassword(password)
@@ -58,11 +67,13 @@ export async function registerAction(
         email,
         passwordHash,
         role,
-        ...(role === 'ARENDATOR' && companyName
+        accountType,
+        ...(accountType === 'BUSINESS' && companyName
           ? {
               profile: {
                 create: {
                   companyName,
+                  phone,
                   slug: `${slugify(companyName)}-${Date.now().toString(36).slice(-4)}`,
                 },
               },
@@ -86,19 +97,18 @@ export async function registerAction(
     ) {
       const target = (error.meta?.target as string[] | undefined)?.[0]
       if (target === 'email') {
-        return errorState('Bu email allaqachon roʻyxatdan oʻtgan', {
-          email: ['Bu email band'],
-        })
+        const t = (await msg()).errors
+        return errorState(t.emailExists, { email: [t.emailTaken] })
       }
-      return errorState('Bu telefon raqami allaqachon roʻyxatdan oʻtgan', {
-        phone: ['Bu raqam band'],
-      })
+      const t = (await msg()).errors
+      return errorState(t.phoneExists, { phone: [t.phoneTaken] })
     }
     console.error('registerAction:', error)
-    return errorState('Roʻyxatdan oʻtishda xatolik yuz berdi. Qayta urinib koʻring.')
+    return errorState((await msg()).errors.registerFailed)
   }
 
-  redirect(role === 'ARENDATOR' ? '/kabinet/elonlarim' : '/kabinet')
+  // `next` bo'lsa (masalan, e'lon berishdan kelgan) — o'sha yerga qaytamiz
+  return localeRedirect(next ? safeNext(next) : role === 'ARENDATOR' ? '/kabinet/elonlarim' : '/kabinet')
 }
 
 export async function loginAction(
@@ -122,14 +132,14 @@ export async function loginAction(
 
     if (!user) {
       await fakeVerify() // timing attack'ni oldini olish
-      return errorState('Telefon raqami yoki parol notoʻgʻri')
+      return errorState((await msg()).errors.invalidCredentials)
     }
     if (user.isBlocked) {
-      return errorState('Hisobingiz bloklangan. Qoʻllab-quvvatlash xizmatiga murojaat qiling.')
+      return errorState((await msg()).errors.blocked)
     }
 
     const valid = await verifyPassword(password, user.passwordHash)
-    if (!valid) return errorState('Telefon raqami yoki parol notoʻgʻri')
+    if (!valid) return errorState((await msg()).errors.invalidCredentials)
 
     await prisma.user.update({
       where: { id: user.id },
@@ -147,16 +157,16 @@ export async function loginAction(
   } catch (error) {
     if (isFrameworkError(error)) throw error
     console.error('loginAction:', error)
-    return errorState('Kirishda xatolik yuz berdi. Qayta urinib koʻring.')
+    return errorState((await msg()).errors.loginFailed)
   }
 
-  redirect(destination)
+  return localeRedirect(destination)
 }
 
 export async function logoutAction(): Promise<void> {
   await destroySessionCookie()
-  revalidatePath('/', 'layout')
-  redirect('/')
+  revalidateLocalized('/', 'layout')
+  return localeRedirect('/')
 }
 
 export async function changePasswordAction(
@@ -175,9 +185,8 @@ export async function changePasswordAction(
 
     const valid = await verifyPassword(parsed.data.currentPassword, user.passwordHash)
     if (!valid) {
-      return errorState('Joriy parol notoʻgʻri', {
-        currentPassword: ['Parol notoʻgʻri'],
-      })
+      const t = (await msg()).errors
+      return errorState(t.currentPasswordWrong, { currentPassword: [t.passwordWrong] })
     }
 
     const passwordHash = await hashPassword(parsed.data.newPassword)
@@ -196,10 +205,10 @@ export async function changePasswordAction(
       name: updated.fullName,
     })
 
-    return successState('Parol yangilandi. Boshqa qurilmalardagi sessiyalar bekor qilindi.')
+    return successState((await msg()).passwordChanged)
   } catch (error) {
     if (isFrameworkError(error)) throw error
     console.error('changePasswordAction:', error)
-    return errorState('Parolni yangilab boʻlmadi')
+    return errorState((await msg()).errors.passwordFailed)
   }
 }

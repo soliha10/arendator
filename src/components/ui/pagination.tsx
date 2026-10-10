@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { Link } from '@/i18n/client'
+import { getMessages } from '@/i18n/server'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -15,7 +16,7 @@ function buildPages(current: number, total: number): (number | '…')[] {
   return pages
 }
 
-export function Pagination({
+export async function Pagination({
   page,
   pageCount,
   buildHref,
@@ -26,6 +27,7 @@ export function Pagination({
   buildHref: (page: number) => string
   className?: string
 }) {
+  const t = (await getMessages()).common.pagination
   if (pageCount <= 1) return null
   const pages = buildPages(page, pageCount)
 
@@ -33,12 +35,12 @@ export function Pagination({
     'inline-flex h-11 min-w-11 items-center justify-center rounded-[10px] border px-3 text-sm font-medium transition-colors lg:h-10 lg:min-w-10'
 
   return (
-    <nav className={cn('flex items-center justify-center gap-1.5', className)} aria-label="Sahifalar">
+    <nav className={cn('flex items-center justify-center gap-1.5', className)} aria-label={t.aria}>
       {page > 1 ? (
         <Link
           href={buildHref(page - 1)}
           className={cn(base, 'border-border bg-surface text-text hover:bg-surface-2')}
-          aria-label="Oldingi sahifa"
+          aria-label={t.prev}
         >
           <ChevronLeft className="size-4" />
         </Link>
@@ -85,7 +87,7 @@ export function Pagination({
         <Link
           href={buildHref(page + 1)}
           className={cn(base, 'border-border bg-surface text-text hover:bg-surface-2')}
-          aria-label="Keyingi sahifa"
+          aria-label={t.next}
         >
           <ChevronRight className="size-4" />
         </Link>

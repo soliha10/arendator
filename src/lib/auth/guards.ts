@@ -1,9 +1,9 @@
 import 'server-only'
 import { cache } from 'react'
-import { redirect } from 'next/navigation'
 import type { Role, User } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getSession, destroySessionCookie } from './session'
+import { localeRedirect } from '@/i18n/action'
 
 export class AuthError extends Error {
   constructor(message = 'Avtorizatsiya talab qilinadi') {
@@ -59,7 +59,7 @@ export async function requireUser(redirectTo?: string): Promise<CurrentUser> {
   const user = await getCurrentUser()
   if (!user) {
     const next = redirectTo ? `?next=${encodeURIComponent(redirectTo)}` : ''
-    redirect(`/kirish${next}`)
+    return localeRedirect(`/kirish${next}`)
   }
   return user
 }
@@ -70,7 +70,7 @@ export async function requireRole(
 ): Promise<CurrentUser> {
   const user = await requireUser(redirectTo)
   if (!roles.includes(user.role)) {
-    redirect('/kabinet?xato=ruxsat')
+    return localeRedirect('/kabinet?xato=ruxsat')
   }
   return user
 }

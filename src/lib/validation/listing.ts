@@ -34,6 +34,8 @@ export const planSchema = z
       .transform((v) => (v ? new Date(v) : undefined)),
 
     depositAmount: numericString({ min: 0, label: 'Zalog' }).optional(),
+    /** Kunlik ijara narxi — faqat arenda uchun, ixtiyoriy */
+    dailyPayment: numericString({ min: 0, label: 'Kunlik ijara' }).optional(),
     insuranceIncluded: z.coerce.boolean().default(false),
     cascoIncluded: z.coerce.boolean().default(false),
     maintenanceIncluded: z.coerce.boolean().default(false),
@@ -63,8 +65,10 @@ export const planSchema = z
     },
   )
   .refine(
+    // Arendada mulk o'tmaydi — oylik to'lov qarzni yopishi shart emas
     (p) =>
       p.calcMethod !== 'FIXED' ||
+      p.planType === 'RENT' ||
       (p.monthlyPaymentInput ?? 0) * p.termMonths >= (p.carPrice - p.downPayment) * 0.5,
     {
       message:
@@ -82,6 +86,16 @@ export const listingImageSchema = z.object({
   height: z.number().int().positive().optional(),
   blurDataUrl: z.string().optional(),
 })
+
+const optionalCoord = (min: number, max: number) =>
+  z
+    .union([z.number(), z.string(), z.null()])
+    .optional()
+    .transform((v) => {
+      if (v === null || v === undefined || v === '') return undefined
+      const n = Number(v)
+      return Number.isFinite(n) && n >= min && n <= max ? n : undefined
+    })
 
 export const listingSchema = z.object({
   id: z.string().optional(),
@@ -125,6 +139,22 @@ export const listingSchema = z.object({
   address: z.string().trim().max(200).optional(),
   contactPhone: phoneSchema,
   contactName: z.string().trim().max(80).optional(),
+  telegram: z
+    .string()
+    .trim()
+    .max(40)
+    .optional()
+    .transform((v) => (v ? v.replace(/^@/, '').replace(/^https?:\/\/t\.me\//, '') : undefined))
+    .refine((v) => !v || /^[A-Za-z0-9_]{4,32}$/.test(v), 'Telegram username notoʻgʻri'),
+  latitude: optionalCoord(-90, 90),
+  longitude: optionalCoord(-180, 180),
+
+  features: z.array(z.string().max(40)).max(40).default([]),
+
+  hasCashSale: z.coerce.boolean().default(false),
+  cashPrice: numericString({ min: 0, label: 'Naqd narx' }).optional(),
+  cashCurrency: z.enum(['UZS', 'USD']).default('UZS'),
+  isNegotiable: z.coerce.boolean().default(false),
 
   images: z
     .array(listingImageSchema)
@@ -133,12 +163,19 @@ export const listingSchema = z.object({
 
   plans: z
     .array(planSchema)
-    .min(1, 'Kamida bitta toʻlov sharti qoʻshing')
     .max(MAX_PLANS_PER_LISTING, `Koʻpi bilan ${MAX_PLANS_PER_LISTING} ta shart`),
 
   /** true — darhol moderatsiyaga yuboriladi, false — qoralama */
   publish: z.coerce.boolean().default(true),
 })
+  .refine((d) => d.plans.length > 0 || d.hasCashSale, {
+    message: 'Kamida bitta sotuv formatini tanlang: naqd, muddatli toʻlov yoki arenda',
+    path: ['plans'],
+  })
+  .refine((d) => !d.hasCashSale || (d.cashPrice ?? 0) > 0, {
+    message: 'Naqd sotuv narxini kiriting',
+    path: ['cashPrice'],
+  })
 
 export type ListingInput = z.input<typeof listingSchema>
 export type ListingOutput = z.output<typeof listingSchema>

@@ -1,0 +1,377 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────
+   Dizayn tokenlari
+   Yorugʻ rejim :root da, qorongʻi rejim ikkala holatda ham
+   (tizim sozlamasi va qoʻlda tanlash) qayta belgilanadi.
+   ────────────────────────────────────────────────────────────── */
+
+:root {
+  --bg: #f8f9ff;
+  --surface: #ffffff;
+  --surface-2: #eff4ff;
+  --surface-3: #e5eeff;
+  --border: #dfe5ef;
+  --border-strong: #bfc7d2;
+
+  --text: #0b1c30;
+  --text-muted: #3f4850;
+  --text-subtle: #6f7882;
+
+  --primary: #006194;
+  --primary-hover: #004f7a;
+  --primary-soft: #e5eeff;
+  --primary-fg: #ffffff;
+
+  --success: #006c49;
+  --success-soft: #d7f7e8;
+  --warning: #8a5a00;
+  --warning-soft: #fff1d6;
+  --danger: #ba1a1a;
+  --danger-soft: #ffe9e7;
+  --accent: #6ffbbe;
+
+  --ring: #006194;
+  --shadow-color: 214 40% 30%;
+
+  /* Yopishqoq elementlar balandligi (mobil → desktop) */
+  --header-h: 3.5rem;
+  --bottomnav-h: 3.75rem;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+
+  color-scheme: light;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --header-h: 4.5rem;
+    --bottomnav-h: 0rem;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a1220;
+    --surface: #111b2b;
+    --surface-2: #172438;
+    --surface-3: #1e2d45;
+    --border: #22324a;
+    --border-strong: #34476a;
+
+    --text: #e8eefb;
+    --text-muted: #a8b4c8;
+    --text-subtle: #75839b;
+
+    --primary: #8fcdff;
+    --primary-hover: #b3dcff;
+    --primary-soft: #12304a;
+    --primary-fg: #002c47;
+
+    --success: #4fdca0;
+    --success-soft: #0e2a20;
+    --warning: #f0b95a;
+    --warning-soft: #2a2113;
+    --danger: #ff8a80;
+    --danger-soft: #2c1618;
+    --accent: #4fdca0;
+
+    --ring: #8fcdff;
+    --shadow-color: 220 40% 2%;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0a1220;
+  --surface: #111b2b;
+  --surface-2: #172438;
+  --surface-3: #1e2d45;
+  --border: #22324a;
+  --border-strong: #34476a;
+
+  --text: #e8eefb;
+  --text-muted: #a8b4c8;
+  --text-subtle: #75839b;
+
+  --primary: #8fcdff;
+  --primary-hover: #b3dcff;
+  --primary-soft: #12304a;
+  --primary-fg: #002c47;
+
+  --success: #4fdca0;
+  --success-soft: #0e2a20;
+  --warning: #f0b95a;
+  --warning-soft: #2a2113;
+  --danger: #ff8a80;
+  --danger-soft: #2c1618;
+  --accent: #4fdca0;
+
+  --ring: #8fcdff;
+  --shadow-color: 220 40% 2%;
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-subtle: var(--text-subtle);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-fg: var(--primary-fg);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-accent: var(--accent);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-manrope), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-card: 0.75rem;
+
+  /* Mobil chrome balandliklari — layout hisob-kitoblarida ishlatiladi */
+  --spacing-header: var(--header-h);
+  --spacing-bottomnav: var(--bottomnav-h);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Raqamlar jadvalda tekis turishi uchun */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+  }
+}
+
+@layer utilities {
+  .container-page {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 84rem;
+    padding-inline: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-page {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .container-page {
+      padding-inline: 3rem;
+    }
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Maxsus utility'lar.
+
+   Tailwind v4 da `@utility` orqali eʼlon qilingan sinf variantlarni
+   ham qoʻllab-quvvatlaydi: `sm:card`, `lg:line-clamp-1x` kabi
+   yozuvlar shu tufayli ishlaydi (oddiy `@layer utilities` bilan
+   yozilganda variantlar generatsiya qilinmaydi).
+   ────────────────────────────────────────────────────────────── */
+
+@utility card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+@utility surface-shadow {
+  box-shadow:
+    0 1px 2px hsl(var(--shadow-color) / 0.06),
+    0 4px 16px -6px hsl(var(--shadow-color) / 0.12);
+}
+
+@utility hide-scrollbar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Uzun matnni n qatorda kesish */
+@utility line-clamp-1x {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@utility line-clamp-2x {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@utility line-clamp-3x {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Mobil: xavfsiz zona (iPhone "home indicator", notch) ────── */
+@utility pb-safe {
+  padding-bottom: var(--safe-b);
+}
+@utility pt-safe {
+  padding-top: var(--safe-t);
+}
+@utility mb-safe {
+  margin-bottom: var(--safe-b);
+}
+@utility bottom-safe {
+  bottom: var(--safe-b);
+}
+
+/* Pastki navigatsiya + xavfsiz zona uchun sahifa "nafas olish" joyi */
+@utility pb-nav {
+  padding-bottom: calc(var(--bottomnav-h) + var(--safe-b));
+}
+
+/* Yopishqoq sarlavha ostida qolmaslik uchun anchor offseti */
+@utility scroll-offset {
+  scroll-margin-top: calc(var(--header-h) + 0.75rem);
+}
+
+/* Barmoq uchun minimal nishon (Apple HIG 44px, Material 48dp) */
+@utility tap {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+/* Gorizontal "karusel": barmoq bilan surilib, har element joyiga tushadi */
+@utility snap-row {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+@utility snap-item {
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+@utility snap-item-start {
+  scroll-snap-align: start;
+}
+
+/* Ichki panel scroll'i sahifani "tortib ketmasligi" uchun */
+@utility scroll-contain {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Qatlamsiz (unlayered) qoidalar — Tailwind utility'laridan ustun
+   turadi, shuning uchun bu yerda faqat qat'iy talablar saqlanadi.
+   ────────────────────────────────────────────────────────────── */
+
+/* iOS Safari font-size 16px dan kichik maydonga fokuslanganda sahifani
+   avtomatik kattalashtiradi. Mobilda barcha kiritish maydonlari 16px. */
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Barmoq bilan bosilganda kulrang "flash" chiqmasin */
+@media (hover: none) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Sensorli qurilmada hover yoʻq — koʻrinishni hover'ga bogʻlamaymiz */
+@media (hover: none) {
+  .touch-visible {
+    opacity: 1 !important;
+  }
+}
+
+/* Skeleton animatsiyasi */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(0 0% 100% / 0.08),
+    transparent
+  );
+  animation: shimmer 1.6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

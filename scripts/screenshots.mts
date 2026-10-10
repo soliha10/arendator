@@ -16,6 +16,11 @@ const arg = (name: string, fallback: string) =>
   process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=')[1] ?? fallback
 
 const BASE = arg('base', 'http://localhost:3000')
+/** --lang=ru|en — sahifalar shu til prefiksi bilan ochiladi (uz — prefikssiz) */
+const LANG = arg('lang', 'uz')
+const PREFIX = LANG === 'uz' ? '' : `/${LANG}`
+/** --only=dilerlar,03-elon — faqat nomida shu qism bor skrinshotlar */
+const ONLY = arg('only', '').split(',').filter(Boolean)
 const OUT = path.resolve(arg('out', './shots'))
 
 /**
@@ -60,7 +65,7 @@ async function findChrome(): Promise<string> {
 interface Shot {
   name: string
   url: string
-  as?: 'arendator' | 'admin'
+  as?: 'arendator' | 'admin' | 'buyer'
   height?: number
   wait?: number
 }
@@ -81,6 +86,7 @@ async function main() {
   const tokens = {
     arendator: await tokenFor('+998901234501'),
     admin: await tokenFor('+998901112233'),
+    buyer: await tokenFor('+998905551100'),
   }
 
   const listing = await prisma.listing.findFirstOrThrow({
@@ -108,11 +114,14 @@ async function main() {
     { name: '04-taqqoslash', url: `/taqqoslash?ids=${compareIds}`, height: 1700 },
     { name: '05-kalkulyator', url: '/kalkulyator', height: 1300 },
     { name: '06-kirish', url: '/kirish', height: 900 },
-    { name: '07-arendatorlar', url: '/arendatorlar', height: 1000 },
+    { name: '07-dilerlar', url: '/dilerlar', height: 1400 },
+    { name: '07b-royxat', url: '/royxatdan-otish', height: 1000 },
     { name: '08-kabinet', url: '/kabinet', as: 'arendator', height: 1100 },
     { name: '09-elonlarim', url: '/kabinet/elonlarim', as: 'arendator', height: 1200 },
     { name: '10-yangi-elon', url: '/kabinet/elon/yangi', as: 'arendator', height: 1400 },
     { name: '11-arizalar', url: '/kabinet/arizalar', as: 'arendator', height: 1000 },
+    { name: '11b-saqlanganlar', url: '/kabinet/saqlanganlar', as: 'buyer', height: 1400 },
+    { name: '11c-xabarnomalar', url: '/kabinet/xabarnomalar', as: 'buyer', height: 1200 },
     { name: '12-admin', url: '/admin', as: 'admin', height: 900 },
     { name: '13-moderatsiya', url: '/admin/moderatsiya', as: 'admin', height: 1000 },
   ]
@@ -132,7 +141,7 @@ async function main() {
   for (const device of ACTIVE_DEVICES) {
     const d = DEVICES[device]
     for (const theme of themes) {
-      for (const shot of shots) {
+      for (const shot of shots.filter((x) => ONLY.length === 0 || ONLY.some((o) => x.name.includes(o)))) {
       const page = await browser.newPage()
       await page.setViewport({
         width: d.width,
@@ -157,11 +166,11 @@ async function main() {
         })
       }
 
-      const target = `${BASE}${shot.url}`
+      const target = `${BASE}${PREFIX}${shot.url === '/' && PREFIX ? '' : shot.url}`
       await page.goto(target, { waitUntil: 'networkidle2', timeout: 45_000 })
       await new Promise((r) => setTimeout(r, shot.wait ?? 700))
 
-      const file = path.join(OUT, `${device}-${shot.name}-${theme}.png`)
+      const file = path.join(OUT, `${device}-${shot.name}-${theme}${PREFIX ? `-${LANG}` : ''}.png`)
       await page.screenshot({ path: file as `${string}.png` })
       console.log(`  ✓ ${path.basename(file)}`)
       await page.close()

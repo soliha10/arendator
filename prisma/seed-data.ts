@@ -119,6 +119,9 @@ export interface SeedCompany {
   verified: boolean
   workingHours: string
   telegram: string
+  tags: string[]
+  lat: number
+  lng: number
 }
 
 export const COMPANIES: SeedCompany[] = [
@@ -133,6 +136,9 @@ export const COMPANIES: SeedCompany[] = [
     verified: true,
     workingHours: 'Dush–Shan 09:00–19:00',
     telegram: 'avtokredit_uz',
+    tags: ['Muddatli toʻlov', 'Halol lizing', 'Trade-in'],
+    lat: 41.2995,
+    lng: 69.2401,
   },
   {
     companyName: 'Mashina Lizing',
@@ -145,6 +151,9 @@ export const COMPANIES: SeedCompany[] = [
     verified: true,
     workingHours: 'Har kuni 08:00–20:00',
     telegram: 'mashina_lizing',
+    tags: ['Lizing 5 yilgacha', 'Yuridik shaxslarga', 'Boshlangʻich 20% dan'],
+    lat: 41.0058,
+    lng: 69.0164,
   },
   {
     companyName: 'Yoʻlchi Motors',
@@ -157,6 +166,9 @@ export const COMPANIES: SeedCompany[] = [
     verified: false,
     workingHours: 'Dush–Shan 09:00–18:00',
     telegram: 'yolchi_motors',
+    tags: ['Kunlik arenda', 'Oylik arenda', 'Viloyatlarga yetkazish'],
+    lat: 39.6542,
+    lng: 66.9597,
   },
   {
     companyName: 'Zamin Auto',
@@ -169,5 +181,8 @@ export const COMPANIES: SeedCompany[] = [
     verified: true,
     workingHours: 'Dush–Juma 09:00–18:00',
     telegram: 'zamin_auto',
+    tags: ['Kafilsiz rassrochka', 'Texnik koʻrikdan oʻtgan', 'Kafolat 1 yil'],
+    lat: 40.3864,
+    lng: 71.7864,
   },
 ]

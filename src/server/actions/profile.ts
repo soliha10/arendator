@@ -1,12 +1,16 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidateLocalized } from '@/i18n/revalidate'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getActionUser } from '@/lib/auth/guards'
 import { slugify } from '@/lib/utils'
 import { arendatorProfileSchema, profileSchema } from '@/lib/validation/auth'
 import { errorState, fromZodError, successState, type ActionState } from './types'
+import { getRequestMessages } from '@/i18n/action'
+
+/** Javob matnlari foydalanuvchi tilida */
+const msg = async () => (await getRequestMessages()).server
 
 export async function updateProfileAction(
   _prev: ActionState,
@@ -25,14 +29,14 @@ export async function updateProfileAction(
         avatarUrl: parsed.data.avatarUrl || null,
       },
     })
-    revalidatePath('/kabinet', 'layout')
-    return successState('Profil yangilandi')
+    revalidateLocalized('/kabinet', 'layout')
+    return successState((await msg()).profile.updated)
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      return errorState('Bu email band', { email: ['Bu email boshqa hisobda ishlatilgan'] })
+      return errorState((await msg()).profile.emailTaken, { email: [(await msg()).profile.emailTakenField] })
     }
     console.error('updateProfileAction:', error)
-    return errorState('Profilni yangilab boʻlmadi')
+    return errorState((await msg()).profile.updateFailed)
   }
 }
 
@@ -89,13 +93,13 @@ export async function saveArendatorProfileAction(
       ])
     }
 
-    revalidatePath('/kabinet', 'layout')
-    revalidatePath('/arendatorlar')
+    revalidateLocalized('/kabinet', 'layout')
+    revalidateLocalized('/dilerlar')
     return successState(
-      existing ? 'Kompaniya maʼlumotlari yangilandi' : 'Arendator profili yaratildi',
+      existing ? (await msg()).profile.companyUpdated : (await msg()).profile.companyCreated,
     )
   } catch (error) {
     console.error('saveArendatorProfileAction:', error)
-    return errorState('Maʼlumotlarni saqlab boʻlmadi')
+    return errorState((await msg()).profile.companyFailed)
   }
 }

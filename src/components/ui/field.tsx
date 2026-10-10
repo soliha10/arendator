@@ -1,5 +1,8 @@
+'use client'
+
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import { useValidationText } from '@/i18n/client'
 
 export function Label({
   className,
@@ -32,7 +35,10 @@ export function Field({
   className?: string
   children: React.ReactNode
 }) {
-  const errorText = Array.isArray(error) ? error[0] : error
+  // Xavfsizlik to'ri: validatsiya xabari har doim joriy tilda chiqadi
+  // (allaqachon tarjima qilingan matn o'zgarmay qoladi)
+  const tv = useValidationText()
+  const errorText = tv((Array.isArray(error) ? error[0] : error) ?? undefined)
   return (
     <div className={cn('space-y-1.5', className)}>
       {label ? (

@@ -1,21 +1,46 @@
 import type { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
+import { SITE } from '@/lib/site'
+import { LOCALES, LOCALE_LABELS, localizeHref } from '@/i18n/config'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+const APP_URL = SITE.url
 
 export const revalidate = 3600
 
+type Entry = Omit<MetadataRoute.Sitemap[number], 'url' | 'alternates'> & { path: string }
+
+/**
+ * Har bir sahifa uchala tilda alohida yozuv bo'lib chiqadi va har biri
+ * boshqa tillardagi muqobillarini ko'rsatadi (hreflang) — Google va
+ * Yandex ruscha qidiruvga ruscha sahifani beradi.
+ */
+function expand(entries: Entry[]): MetadataRoute.Sitemap {
+  return entries.flatMap(({ path, ...rest }) => {
+    const languages = Object.fromEntries(
+      LOCALES.map((l) => [LOCALE_LABELS[l].htmlLang, `${APP_URL}${localizeHref(path, l)}`]),
+    )
+    return LOCALES.map((l) => ({
+      ...rest,
+      url: `${APP_URL}${localizeHref(path, l)}`,
+      alternates: { languages },
+    }))
+  })
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: `${APP_URL}/`, changeFrequency: 'daily', priority: 1 },
-    { url: `${APP_URL}/elonlar`, changeFrequency: 'hourly', priority: 0.9 },
-    { url: `${APP_URL}/arendatorlar`, changeFrequency: 'weekly', priority: 0.7 },
-    { url: `${APP_URL}/kalkulyator`, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${APP_URL}/haqida`, changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${APP_URL}/qollanma`, changeFrequency: 'monthly', priority: 0.4 },
-    { url: `${APP_URL}/shartlar`, changeFrequency: 'yearly', priority: 0.2 },
-    { url: `${APP_URL}/maxfiylik`, changeFrequency: 'yearly', priority: 0.2 },
-    { url: `${APP_URL}/aloqa`, changeFrequency: 'yearly', priority: 0.3 },
+  const staticPages: Entry[] = [
+    { path: '/', changeFrequency: 'daily', priority: 1 },
+    { path: '/elonlar', changeFrequency: 'hourly', priority: 0.9 },
+    { path: '/elonlar?planType=RENT', changeFrequency: 'hourly', priority: 0.85 },
+    { path: '/elonlar?planType=INSTALLMENT', changeFrequency: 'hourly', priority: 0.85 },
+    { path: '/elonlar?planType=LEASING', changeFrequency: 'daily', priority: 0.7 },
+    { path: '/dilerlar', changeFrequency: 'weekly', priority: 0.7 },
+    { path: '/kalkulyator', changeFrequency: 'monthly', priority: 0.6 },
+    { path: '/haqida', changeFrequency: 'yearly', priority: 0.3 },
+    { path: '/qollanma', changeFrequency: 'monthly', priority: 0.4 },
+    { path: '/shartlar', changeFrequency: 'yearly', priority: 0.2 },
+    { path: '/maxfiylik', changeFrequency: 'yearly', priority: 0.2 },
+    { path: '/aloqa', changeFrequency: 'yearly', priority: 0.3 },
   ]
 
   try {
@@ -32,23 +57,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }),
     ])
 
-    return [
+    return expand([
       ...staticPages,
       ...listings.map((l) => ({
-        url: `${APP_URL}/elon/${l.slug}`,
+        path: `/elon/${l.slug}`,
         lastModified: l.updatedAt,
         changeFrequency: 'weekly' as const,
         priority: 0.8,
       })),
       ...profiles.map((p) => ({
-        url: `${APP_URL}/arendator/${p.slug}`,
+        path: `/arendator/${p.slug}`,
         lastModified: p.updatedAt,
         changeFrequency: 'weekly' as const,
         priority: 0.5,
       })),
-    ]
+    ])
   } catch {
     // Baza mavjud boʻlmasa ham sitemap buzilmasin
-    return staticPages
+    return expand(staticPages)
   }
 }

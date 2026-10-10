@@ -4,6 +4,7 @@ import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useMessages } from '@/i18n/client'
 
 export const Dialog = DialogPrimitive.Root
 export const DialogTrigger = DialogPrimitive.Trigger
@@ -22,6 +23,7 @@ export function DialogContent({
   description?: React.ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }) {
+  const closeLabel = useMessages().common.actions.close
   const maxW = {
     sm: 'max-w-sm',
     md: 'max-w-lg',
@@ -59,7 +61,7 @@ export function DialogContent({
           </div>
           <DialogPrimitive.Close
             className="tap -mr-2 -mt-2 inline-flex items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-text"
-            aria-label="Yopish"
+            aria-label={closeLabel}
           >
             <X className="size-5" aria-hidden />
           </DialogPrimitive.Close>

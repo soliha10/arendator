@@ -4,16 +4,15 @@ import * as React from 'react'
 import { ChevronDown, Copy, Star, Trash2 } from 'lucide-react'
 import type { Currency } from '@prisma/client'
 import { computePlan, summarizeByYear, type CalcMethod } from '@/lib/finance'
-import {
-  CALC_METHOD_HINTS, CALC_METHOD_LABELS, CURRENCY_PRECISION,
-  PLAN_TYPE_LABELS, TERM_OPTIONS,
-} from '@/lib/constants'
-import { formatDate, formatMoney, formatPercent, formatTerm } from '@/lib/format'
+import { CURRENCY_PRECISION, TERM_OPTIONS } from '@/lib/constants'
+import { currencyLabel, formatDate, formatMoney, formatPercent, formatTerm } from '@/lib/format'
 import { Input, Select, Textarea } from '@/components/ui/input'
 import { Field } from '@/components/ui/field'
 import { SwitchRow } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useLocale, useMessages } from '@/i18n/client'
+import { fmt } from '@/i18n/format'
 import type { PlanDraft } from './types'
 
 const num = (v: string): number => {
@@ -45,6 +44,10 @@ export function PlanEditor({
   onDuplicate: () => void
   onMakeDefault: () => void
 }) {
+  const locale = useLocale()
+  const m = useMessages()
+  const t = m.form.plan
+  const unit = currencyLabel(currency, locale)
   const [showExtra, setShowExtra] = React.useState(false)
   const [showSchedule, setShowSchedule] = React.useState(false)
 
@@ -71,7 +74,8 @@ export function PlanEditor({
     plan.paymentDay, plan.startDate, currency,
   ])
 
-  const money = (n: number) => formatMoney(n, currency)
+  const money = (n: number) => formatMoney(n, currency, { locale })
+  const pct = (v: number, d = 1) => formatPercent(v, d, locale)
   const downPercent = carPrice > 0 ? (downPayment / carPrice) * 100 : 0
   const tooMuchDown = downPayment >= carPrice && carPrice > 0
 
@@ -80,7 +84,7 @@ export function PlanEditor({
   return (
     <div
       className={cn(
-        'rounded-[14px] border p-4',
+        'rounded-xl border p-4',
         plan.isDefault ? 'border-primary bg-primary-soft/30' : 'border-border bg-surface',
       )}
     >
@@ -92,7 +96,7 @@ export function PlanEditor({
           </span>
           {plan.isDefault ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-fg">
-              <Star className="size-3 fill-current" /> Asosiy shart
+              <Star className="size-3 fill-current" /> {t.mainBadge}
             </span>
           ) : (
             <button
@@ -100,7 +104,7 @@ export function PlanEditor({
               onClick={onMakeDefault}
               className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-muted transition-colors hover:border-primary hover:text-primary"
             >
-              <Star className="size-3" /> Asosiy qilish
+              <Star className="size-3" /> {t.makeMain}
             </button>
           )}
         </div>
@@ -109,7 +113,8 @@ export function PlanEditor({
           <button
             type="button"
             onClick={onDuplicate}
-            title="Nusxalash"
+            title={t.duplicate}
+            aria-label={t.duplicate}
             className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-2 hover:text-text"
           >
             <Copy className="size-4" />
@@ -118,7 +123,8 @@ export function PlanEditor({
             <button
               type="button"
               onClick={onRemove}
-              title="Oʻchirish"
+              title={t.remove}
+              aria-label={t.remove}
               className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-danger-soft hover:text-danger"
             >
               <Trash2 className="size-4" />
@@ -130,15 +136,15 @@ export function PlanEditor({
       <div className="grid gap-4 lg:grid-cols-2">
         {/* ── Chap: kiritish ─────────────────────────────── */}
         <div className="space-y-4">
-          <Field label="Shart nomi" required>
+          <Field label={t.name} required>
             <Input
               value={plan.name}
               onChange={(e) => onChange({ name: e.target.value })}
-              placeholder="Masalan: 24 oylik rassrochka"
+              placeholder={t.namePlaceholder}
             />
           </Field>
 
-          <Field label="Shart turi">
+          <Field label={t.type}>
             <Select
               value={plan.planType}
               onChange={(e) => {
@@ -146,10 +152,12 @@ export function PlanEditor({
                 onChange({
                   planType,
                   ownershipTransfer: planType !== 'RENT',
+                  // Arendada oylik ijara odatda aniq summa bilan kiritiladi
+                  ...(planType === 'RENT' ? { calcMethod: 'FIXED' as const } : {}),
                 })
               }}
             >
-              {Object.entries(PLAN_TYPE_LABELS).map(([value, label]) => (
+              {Object.entries(m.enums.planType).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
@@ -158,14 +166,10 @@ export function PlanEditor({
           </Field>
 
           <Field
-            label="Boshlangʻich toʻlov"
+            label={t.down}
             required
-            error={tooMuchDown ? 'Narxdan kam boʻlishi kerak' : undefined}
-            hint={
-              !tooMuchDown && carPrice > 0
-                ? `Narxning ${formatPercent(downPercent)} qismi`
-                : undefined
-            }
+            error={tooMuchDown ? t.downTooMuch : undefined}
+            hint={!tooMuchDown && carPrice > 0 ? fmt(t.downShare, { pct: pct(downPercent) }) : undefined}
           >
             <Input
               value={plan.downPayment}
@@ -173,7 +177,7 @@ export function PlanEditor({
               inputMode="numeric"
               placeholder="0"
               invalid={tooMuchDown}
-              suffixNode={currency === 'UZS' ? 'soʻm' : '$'}
+              suffixNode={unit}
               className="tabular"
             />
             {carPrice > 0 ? (
@@ -199,7 +203,7 @@ export function PlanEditor({
             ) : null}
           </Field>
 
-          <Field label="Muddat (oy)" required>
+          <Field label={t.term} required>
             <div className="flex flex-wrap gap-1.5">
               {TERM_OPTIONS.map((t) => (
                 <button
@@ -220,15 +224,15 @@ export function PlanEditor({
                 value={plan.termMonths}
                 onChange={(e) => onChange({ termMonths: e.target.value })}
                 inputMode="numeric"
-                aria-label="Muddat (oy)"
+                aria-label={t.term}
                 className="tabular h-9 w-20"
               />
             </div>
           </Field>
 
-          <Field label="Hisoblash usuli" hint={CALC_METHOD_HINTS[plan.calcMethod]}>
+          <Field label={t.method} hint={m.enums.calcMethodHint[plan.calcMethod]}>
             <div className="space-y-1.5">
-              {(Object.keys(CALC_METHOD_LABELS) as CalcMethod[]).map((method) => (
+              {(Object.keys(m.enums.calcMethod) as CalcMethod[]).map((method) => (
                 <label
                   key={method}
                   className={cn(
@@ -245,7 +249,7 @@ export function PlanEditor({
                     className="mt-0.5 accent-[var(--primary)]"
                   />
                   <span className="text-[13px] font-medium text-text">
-                    {CALC_METHOD_LABELS[method]}
+                    {m.enums.calcMethod[method]}
                   </span>
                 </label>
               ))}
@@ -253,38 +257,34 @@ export function PlanEditor({
           </Field>
 
           {plan.calcMethod === 'FIXED' ? (
-            <Field label="Oylik toʻlov" required hint="Siz belgilagan aniq summa">
+            <Field label={t.monthly} required hint={t.monthlyHint}>
               <Input
                 value={plan.monthlyPaymentInput}
                 onChange={(e) => onChange({ monthlyPaymentInput: e.target.value })}
                 inputMode="numeric"
                 placeholder="0"
-                suffixNode={currency === 'UZS' ? 'soʻm' : '$'}
+                suffixNode={unit}
                 className="tabular"
               />
             </Field>
           ) : (
             <Field
-              label="Yillik ustama foizi"
-              hint={
-                plan.calcMethod === 'FLAT'
-                  ? 'Foiz butun summaga bir marta qoʻshiladi'
-                  : 'Foiz har oy qolgan qarzga hisoblanadi'
-              }
+              label={t.rate}
+              hint={plan.calcMethod === 'FLAT' ? t.flatHint : t.annuityHint}
             >
               <Input
                 value={plan.annualRatePercent}
                 onChange={(e) => onChange({ annualRatePercent: e.target.value })}
                 inputMode="decimal"
                 placeholder="24"
-                suffixNode="% / yil"
+                suffixNode={m.form.price.perYear}
                 className="tabular"
               />
             </Field>
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Toʻlov kuni" hint="Har oyning">
+            <Field label={t.payDay} hint={t.payDayHint}>
               <Input
                 value={plan.paymentDay}
                 onChange={(e) => onChange({ paymentDay: e.target.value })}
@@ -293,7 +293,7 @@ export function PlanEditor({
                 className="tabular"
               />
             </Field>
-            <Field label="Grafik boshlanishi" hint="Boʻsh boʻlsa — bugundan">
+            <Field label={t.start} hint={t.startHint}>
               <Input
                 type="date"
                 value={plan.startDate}
@@ -312,7 +312,7 @@ export function PlanEditor({
               className="flex w-full items-center justify-between gap-2 px-3.5 py-3 text-left"
             >
               <span className="text-[13px] font-semibold text-text">
-                Qoʻshimcha shartlar
+                {t.extra}
               </span>
               <ChevronDown
                 className={cn(
@@ -327,32 +327,44 @@ export function PlanEditor({
                 <SwitchRow
                   checked={plan.insuranceIncluded}
                   onCheckedChange={(v) => onChange({ insuranceIncluded: v })}
-                  label="Sugʻurta narxga kiritilgan"
+                  label={t.insurance}
                 />
                 <SwitchRow
                   checked={plan.cascoIncluded}
                   onCheckedChange={(v) => onChange({ cascoIncluded: v })}
-                  label="KASKO narxga kiritilgan"
+                  label={t.casco}
                 />
                 <SwitchRow
                   checked={plan.maintenanceIncluded}
                   onCheckedChange={(v) => onChange({ maintenanceIncluded: v })}
-                  label="Texnik xizmat narxga kiritilgan"
+                  label={t.maintenance}
                 />
                 <SwitchRow
                   checked={plan.ownershipTransfer}
                   onCheckedChange={(v) => onChange({ ownershipTransfer: v })}
-                  label="Toʻlovlar tugagach mulk huquqi oʻtadi"
-                  hint="Arendada odatda oʻtmaydi"
+                  label={t.ownership}
+                  hint={t.ownershipHint}
                 />
                 <SwitchRow
                   checked={plan.earlyPayoffAllowed}
                   onCheckedChange={(v) => onChange({ earlyPayoffAllowed: v })}
-                  label="Muddatidan oldin yopish mumkin"
+                  label={t.early}
                 />
 
                 <div className="grid grid-cols-2 gap-3 pt-1">
-                  <Field label="Zalog">
+                  {plan.planType === 'RENT' ? (
+                    <Field label={t.daily} className="col-span-2">
+                      <Input
+                        value={plan.dailyPayment}
+                        onChange={(e) => onChange({ dailyPayment: e.target.value })}
+                        inputMode="numeric"
+                        placeholder="350000"
+                        suffixNode={unit}
+                        className="tabular"
+                      />
+                    </Field>
+                  ) : null}
+                  <Field label={t.deposit}>
                     <Input
                       value={plan.depositAmount}
                       onChange={(e) => onChange({ depositAmount: e.target.value })}
@@ -361,7 +373,7 @@ export function PlanEditor({
                       className="tabular"
                     />
                   </Field>
-                  <Field label="Kunlik jarima">
+                  <Field label={t.penalty}>
                     <Input
                       value={plan.penaltyPerDay}
                       onChange={(e) => onChange({ penaltyPerDay: e.target.value })}
@@ -370,7 +382,7 @@ export function PlanEditor({
                       className="tabular"
                     />
                   </Field>
-                  <Field label="Yillik km limiti">
+                  <Field label={t.kmLimit}>
                     <Input
                       value={plan.mileageLimitPerYear}
                       onChange={(e) => onChange({ mileageLimitPerYear: e.target.value })}
@@ -379,7 +391,7 @@ export function PlanEditor({
                       className="tabular"
                     />
                   </Field>
-                  <Field label="Ortiqcha km narxi">
+                  <Field label={t.extraKm}>
                     <Input
                       value={plan.extraMileageFee}
                       onChange={(e) => onChange({ extraMileageFee: e.target.value })}
@@ -390,21 +402,21 @@ export function PlanEditor({
                   </Field>
                 </div>
 
-                <Field label="Kerakli hujjatlar">
+                <Field label={t.docs}>
                   <Textarea
                     value={plan.requiredDocuments}
                     onChange={(e) => onChange({ requiredDocuments: e.target.value })}
                     rows={2}
-                    placeholder="Passport, haydovchilik guvohnomasi, kafil…"
+                    placeholder={t.docsPlaceholder}
                   />
                 </Field>
 
-                <Field label="Izoh">
+                <Field label={t.notes}>
                   <Textarea
                     value={plan.notes}
                     onChange={(e) => onChange({ notes: e.target.value })}
                     rows={2}
-                    placeholder="Mijozga muhim boʻlgan qoʻshimcha maʼlumot"
+                    placeholder={t.notesPlaceholder}
                   />
                 </Field>
               </div>
@@ -416,37 +428,29 @@ export function PlanEditor({
         <div className="lg:sticky lg:top-20 lg:self-start">
           <div className="rounded-xl border border-border bg-surface-2 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-subtle">
-              Hisob-kitob
+              {t.calc}
             </p>
 
             {!computed || carPrice <= 0 ? (
               <p className="mt-3 text-[13px] text-muted">
-                Avtomobil narxini kiriting — natija shu yerda darhol chiqadi.
+                {t.calcEmpty}
               </p>
             ) : (
               <>
                 <div className="mt-3 space-y-2.5">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-[13px] text-muted">Oylik toʻlov</span>
+                    <span className="text-[13px] text-muted">{t.monthlyPay}</span>
                     <span className="tabular text-xl font-bold text-primary">
                       {money(computed.monthlyPayment)}
                     </span>
                   </div>
                   {[
-                    ['Boshlangʻich toʻlov', money(downPayment)],
-                    ['Moliyalashtiriladi', money(computed.financedAmount)],
-                    ['Jami toʻlov', money(computed.totalPayable)],
-                    [
-                      'Ustama',
-                      `${money(computed.markupAmount)} (${formatPercent(computed.overpayPercent)})`,
-                    ],
-                    [
-                      'Samarali yillik',
-                      computed.markupPercent > 0
-                        ? formatPercent(computed.markupPercent, 2)
-                        : '—',
-                    ],
-                    ['Muddat', formatTerm(termMonths)],
+                    [t.downPay, money(downPayment)],
+                    [t.financed, money(computed.financedAmount)],
+                    [t.total, money(computed.totalPayable)],
+                    [t.markup, `${money(computed.markupAmount)} (${pct(computed.overpayPercent)})`],
+                    [t.effective, computed.markupPercent > 0 ? pct(computed.markupPercent, 2) : '—'],
+                    [t.termLabel, formatTerm(termMonths, locale)],
                   ].map(([label, value]) => (
                     <div
                       key={label}
@@ -464,7 +468,7 @@ export function PlanEditor({
                 {years.length > 0 ? (
                   <div className="mt-4">
                     <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-subtle">
-                      Yillar boʻyicha
+                      {t.byYear}
                     </p>
                     <ul className="space-y-1">
                       {years.map((y) => (
@@ -473,7 +477,7 @@ export function PlanEditor({
                           className="flex items-center justify-between text-[12px]"
                         >
                           <span className="tabular text-muted">
-                            {y.year} · {y.months} oy
+                            {fmt(t.yearRow, { year: y.year, n: y.months })}
                           </span>
                           <span className="tabular font-medium text-text">
                             {money(y.total)}
@@ -492,7 +496,7 @@ export function PlanEditor({
                   className="mt-4"
                   onClick={() => setShowSchedule((v) => !v)}
                 >
-                  {showSchedule ? 'Grafikni yashirish' : `Grafikni koʻrish (${termMonths} oy)`}
+                  {showSchedule ? t.hideSchedule : fmt(t.showSchedule, { n: termMonths })}
                 </Button>
 
                 {showSchedule ? (
@@ -501,9 +505,9 @@ export function PlanEditor({
                       <thead className="sticky top-0 bg-surface-2">
                         <tr className="text-left text-subtle">
                           <th className="px-2.5 py-2 font-semibold">№</th>
-                          <th className="px-2.5 py-2 font-semibold">Sana</th>
-                          <th className="px-2.5 py-2 text-right font-semibold">Toʻlov</th>
-                          <th className="px-2.5 py-2 text-right font-semibold">Qoldiq</th>
+                          <th className="px-2.5 py-2 font-semibold">{t.thDate}</th>
+                          <th className="px-2.5 py-2 text-right font-semibold">{t.thPay}</th>
+                          <th className="px-2.5 py-2 text-right font-semibold">{t.thBalance}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">

@@ -1,11 +1,15 @@
 'use client'
 
 import * as React from 'react'
-import { CheckCircle2, Phone, Send } from 'lucide-react'
+import { CheckCircle2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import type { PlanDto } from '@/server/mappers'
 import { createLeadAction } from '@/server/actions/leads'
-import { formatMoney, formatPhone } from '@/lib/format'
+import { formatMoney } from '@/lib/format'
+import { track } from '@/lib/analytics'
+import { useLocale, useMessages, useValidationText } from '@/i18n/client'
+import { fmt } from '@/i18n/format'
+import { selectPlan, useSelectedPlan } from './selected-plan'
 import { Button } from '@/components/ui/button'
 import { Input, Select, Textarea } from '@/components/ui/input'
 import { Field } from '@/components/ui/field'
@@ -14,13 +18,11 @@ import { idleState } from '@/server/actions/types'
 export function LeadForm({
   listingId,
   plans,
-  contactPhone,
   defaultName = '',
   defaultPhone = '',
 }: {
   listingId: string
   plans: PlanDto[]
-  contactPhone: string
   defaultName?: string
   defaultPhone?: string
 }) {
@@ -28,17 +30,24 @@ export function LeadForm({
     createLeadAction,
     idleState,
   )
-  const [revealed, setRevealed] = React.useState(false)
+  const m = useMessages()
+  const t = m.listing.lead
+  const locale = useLocale()
+  const tv = useValidationText()
+  const defaultPlan = plans.find((p) => p.isDefault) ?? plans[0]
+  // Vidjetda tanlangan shart formada ham tanlangan bo'ladi (va aksincha)
+  const planId = useSelectedPlan(defaultPlan?.id ?? null)
 
   React.useEffect(() => {
-    if (state.status === 'error' && state.message) toast.error(state.message)
-  }, [state])
+    if (state.status === 'error' && state.message) toast.error(tv(state.message))
+    if (state.status === 'success') track('lead_submit', { listing_id: listingId })
+  }, [state, listingId, tv])
 
   if (state.status === 'success') {
     return (
       <div className="card p-5 text-center">
         <CheckCircle2 className="mx-auto size-10 text-success" />
-        <h3 className="mt-3 text-base font-semibold text-text">Ariza yuborildi</h3>
+        <h3 className="mt-3 text-base font-semibold text-text">{t.sentTitle}</h3>
         <p className="mt-1.5 text-sm text-muted">{state.message}</p>
         <Button
           variant="outline"
@@ -46,55 +55,37 @@ export function LeadForm({
           className="mt-4"
           onClick={() => window.location.reload()}
         >
-          Yana ariza qoldirish
+          {t.again}
         </Button>
       </div>
     )
   }
 
-  const defaultPlan = plans.find((p) => p.isDefault) ?? plans[0]
-
   return (
-    <div className="card p-5">
-      <h3 className="text-base font-semibold text-text">Arendator bilan bogʻlanish</h3>
-      <p className="mt-1 text-[13px] text-muted">
-        Ariza qoldiring — arendator siz bilan bogʻlanadi
+    <div className="card p-5 sm:p-6">
+      <h3 className="text-[17px] font-bold text-text">{t.title}</h3>
+      <p className="mt-1 text-[13px] leading-relaxed text-muted">
+        {t.subtitle}
       </p>
 
-      <Button
-        variant={revealed ? 'outline' : 'primary'}
-        block
-        size="lg"
-        className="mt-4"
-        asChild={revealed}
-        onClick={revealed ? undefined : () => setRevealed(true)}
-      >
-        {revealed ? (
-          <a href={`tel:${contactPhone}`}>
-            <Phone /> {formatPhone(contactPhone)}
-          </a>
-        ) : (
-          <span>
-            <Phone /> Raqamni koʻrsatish
-          </span>
-        )}
-      </Button>
-
-      <div className="my-4 flex items-center gap-3">
-        <span className="h-px flex-1 bg-border" />
-        <span className="text-[12px] text-subtle">yoki</span>
-        <span className="h-px flex-1 bg-border" />
-      </div>
-
-      <form action={formAction} className="space-y-3">
+      <form action={formAction} className="mt-4 space-y-3">
         <input type="hidden" name="listingId" value={listingId} />
 
         {plans.length > 0 ? (
-          <Field label="Qaysi shart boʻyicha?" htmlFor="planId">
-            <Select id="planId" name="planId" defaultValue={defaultPlan?.id}>
+          <Field label={t.plan} htmlFor="planId">
+            <Select
+              id="planId"
+              name="planId"
+              value={planId ?? ''}
+              onChange={(e) => selectPlan(e.target.value)}
+            >
               {plans.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} — {formatMoney(p.monthlyPayment, p.currency, { compact: true })}/oy
+                  {fmt(t.planOption, {
+                    type: m.enums.planType[p.planType],
+                    term: p.termMonths,
+                    monthly: formatMoney(p.monthlyPayment, p.currency, { compact: true, locale }),
+                  })}
                 </option>
               ))}
             </Select>
@@ -102,16 +93,16 @@ export function LeadForm({
         ) : null}
 
         <Field
-          label="Ismingiz"
+          label={t.name}
           htmlFor="fullName"
           required
-          error={state.fieldErrors?.fullName}
+          error={state.fieldErrors?.fullName?.map((e) => tv(e) ?? e)}
         >
           <Input
             id="fullName"
             name="fullName"
             defaultValue={defaultName}
-            placeholder="Ism Familiya"
+            placeholder={t.namePlaceholder}
             autoComplete="name"
             required
             invalid={!!state.fieldErrors?.fullName}
@@ -119,10 +110,10 @@ export function LeadForm({
         </Field>
 
         <Field
-          label="Telefon raqamingiz"
+          label={t.phone}
           htmlFor="phone"
           required
-          error={state.fieldErrors?.phone}
+          error={state.fieldErrors?.phone?.map((e) => tv(e) ?? e)}
         >
           <Input
             id="phone"
@@ -136,22 +127,21 @@ export function LeadForm({
           />
         </Field>
 
-        <Field label="Xabar" htmlFor="message" error={state.fieldErrors?.message}>
+        <Field label={t.message} htmlFor="message" error={state.fieldErrors?.message?.map((e) => tv(e) ?? e)}>
           <Textarea
             id="message"
             name="message"
             rows={3}
-            placeholder="Savolingiz yoki qoʻshimcha maʼlumot…"
+            placeholder={t.messagePlaceholder}
           />
         </Field>
 
         <Button type="submit" block size="lg" loading={pending}>
-          <Send /> Ariza yuborish
+          <Send /> {t.submit}
         </Button>
 
         <p className="text-[12px] leading-relaxed text-subtle">
-          Ariza yuborish orqali telefon raqamingiz arendatorga koʻrsatilishiga
-          rozilik bildirasiz.
+          {t.consent}
         </p>
       </form>
     </div>

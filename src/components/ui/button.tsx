@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -23,7 +23,7 @@ const buttonVariants = cva(
       // Mobilda har bir oʻlcham bir pogʻona kattaroq: barmoq uchun
       // 44px atrofidagi nishon kerak, sichqoncha uchun esa ixchamroq.
       size: {
-        sm: 'h-9 px-3 text-[13px] [&_svg]:size-4 lg:h-8',
+        sm: 'h-9 px-3.5 text-[13px] [&_svg]:size-4',
         md: 'h-11 px-4 text-sm [&_svg]:size-4 lg:h-10',
         lg: 'h-12 px-6 text-[15px] [&_svg]:size-5',
         icon: 'size-11 [&_svg]:size-4 lg:size-10',

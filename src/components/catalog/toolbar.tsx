@@ -1,27 +1,27 @@
 'use client'
 
 import { X } from 'lucide-react'
-import {
-  BODY_TYPE_LABELS, CONDITION_LABELS, DRIVE_TYPE_LABELS, FUEL_TYPE_LABELS,
-  PLAN_TYPE_LABELS, SORT_OPTIONS, TRANSMISSION_LABELS,
-} from '@/lib/constants'
-import { formatMoney } from '@/lib/format'
+import { SORT_OPTIONS } from '@/lib/constants'
+import { formatCompactUzs } from '@/lib/format'
+import { useLocale, useMessages } from '@/i18n/client'
+import { fmt } from '@/i18n/format'
 import { Select } from '@/components/ui/input'
 import { useFilters } from './use-filters'
-import type { FiltersData } from './filters-panel'
+import { dealTypeLabels, featureLabels, type FiltersData } from './filters-panel'
 
 export function SortSelect() {
   const { get, setParam } = useFilters()
+  const m = useMessages()
   return (
     <Select
       value={get('sort') || 'newest'}
       onChange={(e) => setParam('sort', e.target.value)}
-      aria-label="Saralash"
+      aria-label={m.catalog.sortAria}
       className="h-11 w-full lg:h-10 lg:w-56"
     >
       {SORT_OPTIONS.map((o) => (
         <option key={o.value} value={o.value}>
-          {o.label}
+          {m.enums.sort[o.value]}
         </option>
       ))}
     </Select>
@@ -37,6 +37,13 @@ interface Chip {
 /** Faol filtrlarni "chip" ko'rinishida ko'rsatadi va bittalab olib tashlaydi */
 export function ActiveFilterChips({ data }: { data: FiltersData }) {
   const { get, getList, toggleInList, setParam, clearAll } = useFilters()
+  const m = useMessages()
+  const locale = useLocale()
+  const t = m.catalog.chips
+  const deals = dealTypeLabels(m)
+  const features = featureLabels(m)
+  const pick = <T extends Record<string, string>>(labels: T) => (s: string) =>
+    (labels as Record<string, string>)[s]
 
   const chips: Chip[] = []
 
@@ -59,35 +66,35 @@ export function ActiveFilterChips({ data }: { data: FiltersData }) {
     return undefined
   })
   listChip('region', (s) => data.regions.find((r) => r.slug === s)?.name)
-  listChip('planType', (s) => PLAN_TYPE_LABELS[s as keyof typeof PLAN_TYPE_LABELS])
-  listChip('body', (s) => BODY_TYPE_LABELS[s as keyof typeof BODY_TYPE_LABELS])
-  listChip('transmission', (s) => TRANSMISSION_LABELS[s as keyof typeof TRANSMISSION_LABELS])
-  listChip('fuel', (s) => FUEL_TYPE_LABELS[s as keyof typeof FUEL_TYPE_LABELS])
-  listChip('drive', (s) => DRIVE_TYPE_LABELS[s as keyof typeof DRIVE_TYPE_LABELS])
-  listChip('condition', (s) => CONDITION_LABELS[s as keyof typeof CONDITION_LABELS])
+  listChip('planType', pick(deals))
+  listChip('features', pick(features))
+  listChip('body', pick(m.enums.bodyType))
+  listChip('transmission', pick(m.enums.transmission))
+  listChip('fuel', pick(m.enums.fuelType))
+  listChip('drive', pick(m.enums.driveTypeLong))
+  listChip('condition', pick(m.enums.condition))
 
-  const money = (key: string, prefix: string) => {
+  // Qisqa summa (Intl'siz — server va brauzerda bir xil): "5 mln" / "5 млн" / "5M"
+  const money = (key: 'monthlyMin' | 'monthlyMax' | 'downMin' | 'downMax' | 'priceMin' | 'priceMax') => {
     const raw = get(key)
     if (!raw) return
-    chips.push({
-      key,
-      label: `${prefix} ${formatMoney(Number(raw), 'UZS', { compact: true })}`,
-    })
+    chips.push({ key, label: fmt(t[key], { v: formatCompactUzs(Number(raw), locale) }) })
   }
 
-  money('monthlyMin', 'Oylik ≥')
-  money('monthlyMax', 'Oylik ≤')
-  money('downMin', 'Boshlangʻich ≥')
-  money('downMax', 'Boshlangʻich ≤')
-  money('priceMin', 'Narx ≥')
-  money('priceMax', 'Narx ≤')
+  money('monthlyMin')
+  money('monthlyMax')
+  money('downMin')
+  money('downMax')
+  money('priceMin')
+  money('priceMax')
 
-  if (get('termMin')) chips.push({ key: 'termMin', label: `${get('termMin')} oydan` })
-  if (get('termMax')) chips.push({ key: 'termMax', label: `${get('termMax')} oygacha` })
-  if (get('yearMin')) chips.push({ key: 'yearMin', label: `${get('yearMin')} yildan` })
-  if (get('yearMax')) chips.push({ key: 'yearMax', label: `${get('yearMax')} yilgacha` })
-  if (get('verified') === '1') chips.push({ key: 'verified', label: 'Tasdiqlangan arendator' })
-  if (get('insurance') === '1') chips.push({ key: 'insurance', label: 'Sugʻurta bilan' })
+  for (const key of ['termMin', 'termMax', 'yearMin', 'yearMax'] as const) {
+    const v = get(key)
+    if (v) chips.push({ key, label: fmt(t[key], { n: v }) })
+  }
+  if (get('verified') === '1') chips.push({ key: 'verified', label: t.verified })
+  if (get('priceDrop') === '1') chips.push({ key: 'priceDrop', label: t.priceDrop })
+  if (get('insurance') === '1') chips.push({ key: 'insurance', label: t.insurance })
   if (get('q')) chips.push({ key: 'q', label: `“${get('q')}”` })
 
   if (chips.length === 0) return null
@@ -101,7 +108,7 @@ export function ActiveFilterChips({ data }: { data: FiltersData }) {
           onClick={() =>
             chip.value ? toggleInList(chip.key, chip.value) : setParam(chip.key, '')
           }
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 text-[13px] text-text transition-colors hover:border-danger hover:text-danger"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary-soft px-3 text-[13px] font-medium text-primary transition-colors hover:bg-danger-soft hover:text-danger"
         >
           {chip.label}
           <X className="size-3.5" />
@@ -113,7 +120,7 @@ export function ActiveFilterChips({ data }: { data: FiltersData }) {
           onClick={clearAll}
           className="min-h-9 px-1.5 text-[13px] font-medium text-muted underline-offset-4 hover:text-danger hover:underline"
         >
-          Hammasini tozalash
+          {t.clearAll}
         </button>
       ) : null}
     </div>

@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import type {
   BodyType, CalcMethod, CarCondition, Currency, DriveType,
-  FuelType, ListingStatus, PlanType, ScheduleStatus, Transmission,
+  FuelType, ListingStatus, PlanType, PromotionTier, ScheduleStatus, Transmission,
 } from '@prisma/client'
 
 /**
@@ -38,6 +38,7 @@ export interface PlanDto {
   downPaymentPercent: number
   termMonths: number
   monthlyPayment: number
+  dailyPayment: number | null
   totalPayable: number
   markupAmount: number
   markupPercent: number
@@ -72,6 +73,19 @@ export interface ScheduleRowDto {
   note: string | null
 }
 
+/** Kartochkada ko'rsatiladigan eng qulay taklif (har bir tur bo'yicha) */
+export interface OfferSummary {
+  planType: PlanType
+  monthlyUzs: number
+  downUzs: number
+  downPercent: number
+  termMonths: number
+  dailyUzs: number | null
+  depositUzs: number | null
+  ownershipTransfer: boolean
+  markupPercent: number
+}
+
 export interface ListingCardDto {
   id: string
   slug: string
@@ -85,6 +99,8 @@ export interface ListingCardDto {
   brandName: string
   modelName: string
   regionName: string
+  /** Tarjima uchun: messages.enums.region[regionSlug] */
+  regionSlug: string
   coverImage: ImageDto | null
   imageCount: number
   minMonthlyPaymentUzs: number | null
@@ -101,13 +117,29 @@ export interface ListingCardDto {
   ownerVerified: boolean
   ownerName: string
   ownerSlug: string | null
+  ownerLogoUrl: string | null
+  ownerPhone: string
+
+  // Dizayn v2
+  hasCashSale: boolean
+  cashPriceUzs: number | null
+  isNegotiable: boolean
+  /** Naqd narx bo'lsa shu, aks holda shartlardagi avtomobil narxi */
+  displayPriceUzs: number | null
+  previousPriceUzs: number | null
+  promotion: PromotionTier
+  minDailyRentUzs: number | null
+  features: string[]
+  installment: OfferSummary | null
+  rent: OfferSummary | null
+  leasing: OfferSummary | null
 }
 
 export const PLAN_SELECT = {
   id: true, name: true, planType: true, currency: true, calcMethod: true,
   carPrice: true, downPayment: true, termMonths: true, monthlyPayment: true,
+  dailyPayment: true, carPriceUzs: true, downPaymentUzs: true, monthlyPaymentUzs: true,
   totalPayable: true, markupAmount: true, markupPercent: true,
-  carPriceUzs: true, downPaymentUzs: true, monthlyPaymentUzs: true,
   paymentDay: true, startDate: true, depositAmount: true,
   insuranceIncluded: true, cascoIncluded: true, maintenanceIncluded: true,
   mileageLimitPerYear: true, extraMileageFee: true, ownershipTransfer: true,
@@ -150,6 +182,7 @@ export function toPlanDto(p: PlanRow): PlanDto {
       carPrice > 0 ? Math.round((downPayment / carPrice) * 1000) / 10 : 0,
     termMonths: p.termMonths,
     monthlyPayment: decOr0(p.monthlyPayment),
+    dailyPayment: dec(p.dailyPayment),
     totalPayable: decOr0(p.totalPayable),
     markupAmount: decOr0(p.markupAmount),
     markupPercent: decOr0(p.markupPercent),
@@ -180,9 +213,12 @@ export const LISTING_CARD_SELECT = {
   minTermMonths: true, maxTermMonths: true,
   hasInstallment: true, hasRent: true,
   isFeatured: true, viewCount: true, publishedAt: true,
+  hasCashSale: true, cashPriceUzs: true, isNegotiable: true,
+  previousPriceUzs: true, promotion: true, promotedUntil: true,
+  minDailyRentUzs: true, features: true, contactPhone: true,
   brand: { select: { name: true } },
   model: { select: { name: true } },
-  region: { select: { name: true } },
+  region: { select: { name: true, slug: true } },
   images: {
     orderBy: [{ isCover: 'desc' }, { position: 'asc' }],
     take: 1,
@@ -191,17 +227,77 @@ export const LISTING_CARD_SELECT = {
       blurDataUrl: true, isCover: true, position: true,
     },
   },
-  plans: { select: { currency: true }, take: 1, orderBy: { isDefault: 'desc' } },
+  plans: {
+    orderBy: [{ isDefault: 'desc' }, { monthlyPaymentUzs: 'asc' }],
+    select: {
+      currency: true, planType: true, monthlyPaymentUzs: true,
+      downPaymentUzs: true, carPriceUzs: true, termMonths: true,
+      dailyPayment: true, depositAmount: true, ownershipTransfer: true,
+      markupPercent: true,
+    },
+  },
   owner: {
     select: {
       fullName: true,
-      profile: { select: { isVerified: true, companyName: true, slug: true } },
+      profile: { select: { isVerified: true, companyName: true, slug: true, logoUrl: true } },
     },
   },
   _count: { select: { images: true } },
 } satisfies Prisma.ListingSelect
 
 type ListingCardRow = Prisma.ListingGetPayload<{ select: typeof LISTING_CARD_SELECT }>
+
+type OfferPlanRow = {
+  planType: PlanType
+  currency: Currency
+  monthlyPaymentUzs: Prisma.Decimal
+  downPaymentUzs: Prisma.Decimal
+  carPriceUzs: Prisma.Decimal
+  termMonths: number
+  dailyPayment: Prisma.Decimal | null
+  depositAmount: Prisma.Decimal | null
+  ownershipTransfer: boolean
+  markupPercent: Prisma.Decimal
+}
+
+/**
+ * Har bir to'lov turi bo'yicha eng arzon oylik to'lovli shartni tanlaydi.
+ * Kunlik ijara va zalog shart valyutasida saqlanadi — kartochkada faqat
+ * so'mdagi shartlar uchun ko'rsatiladi (USD bo'lsa null).
+ */
+export function pickOffers(plans: OfferPlanRow[]): Record<'installment' | 'rent' | 'leasing', OfferSummary | null> {
+  const best = (types: PlanType[]): OfferSummary | null => {
+    const list = plans
+      .filter((p) => types.includes(p.planType))
+      .sort((a, b) => Number(a.monthlyPaymentUzs) - Number(b.monthlyPaymentUzs))
+    const p = list[0]
+    if (!p) return null
+    const price = Number(p.carPriceUzs)
+    const down = Number(p.downPaymentUzs)
+    return {
+      planType: p.planType,
+      monthlyUzs: Number(p.monthlyPaymentUzs),
+      downUzs: down,
+      downPercent: price > 0 ? Math.round((down / price) * 100) : 0,
+      termMonths: p.termMonths,
+      dailyUzs: p.currency === 'UZS' ? dec(p.dailyPayment) : null,
+      depositUzs: p.currency === 'UZS' ? dec(p.depositAmount) : null,
+      ownershipTransfer: p.ownershipTransfer,
+      markupPercent: Number(p.markupPercent),
+    }
+  }
+  return {
+    installment: best(['INSTALLMENT']),
+    rent: best(['RENT']),
+    leasing: best(['LEASING']),
+  }
+}
+
+/** Muddati o'tgan VIP/TOP oddiy e'lon sifatida ko'rsatiladi */
+export function effectivePromotion(tier: PromotionTier, until: Date | null): PromotionTier {
+  if (tier === 'NONE') return 'NONE'
+  return until && until.getTime() < Date.now() ? 'NONE' : tier
+}
 
 export function toListingCardDto(l: ListingCardRow): ListingCardDto {
   const cover = l.images[0] ?? null
@@ -218,6 +314,7 @@ export function toListingCardDto(l: ListingCardRow): ListingCardDto {
     brandName: l.brand.name,
     modelName: l.model.name,
     regionName: l.region.name,
+    regionSlug: l.region.slug,
     coverImage: cover
       ? {
           id: cover.id, url: cover.url, width: cover.width,
@@ -240,6 +337,36 @@ export function toListingCardDto(l: ListingCardRow): ListingCardDto {
     ownerVerified: l.owner.profile?.isVerified ?? false,
     ownerName: l.owner.profile?.companyName ?? l.owner.fullName,
     ownerSlug: l.owner.profile?.slug ?? null,
+    ownerLogoUrl: l.owner.profile?.logoUrl ?? null,
+    ownerPhone: l.contactPhone,
+    ...cardExtras(l),
+  }
+}
+
+/** Kartochka va detal DTO'lari uchun umumiy v2 maydonlar */
+export function cardExtras(l: {
+  hasCashSale: boolean
+  cashPriceUzs: Prisma.Decimal | null
+  carPriceUzs: Prisma.Decimal | null
+  isNegotiable: boolean
+  previousPriceUzs: Prisma.Decimal | null
+  promotion: PromotionTier
+  promotedUntil: Date | null
+  minDailyRentUzs: Prisma.Decimal | null
+  features: string[]
+  plans: OfferPlanRow[]
+}) {
+  const cash = l.hasCashSale ? dec(l.cashPriceUzs) : null
+  return {
+    hasCashSale: l.hasCashSale,
+    cashPriceUzs: cash,
+    isNegotiable: l.isNegotiable,
+    displayPriceUzs: cash ?? dec(l.carPriceUzs),
+    previousPriceUzs: dec(l.previousPriceUzs),
+    promotion: effectivePromotion(l.promotion, l.promotedUntil),
+    minDailyRentUzs: dec(l.minDailyRentUzs),
+    features: l.features,
+    ...pickOffers(l.plans),
   }
 }
 
@@ -252,10 +379,19 @@ export interface ListingDetailDto extends Omit<ListingCardDto, 'coverImage'> {
   address: string | null
   contactPhone: string
   contactName: string | null
+  telegram: string | null
+  latitude: number | null
+  longitude: number | null
+  cashPrice: number | null
+  cashCurrency: Currency
   status: ListingStatus
   favoriteCount: number
+  leadCount: number
+  phoneRevealCount: number
+  priceChangedAt: string | null
   images: ImageDto[]
   plans: PlanDto[]
+  priceHistory: { priceUzs: number; createdAt: string }[]
   owner: {
     id: string
     fullName: string
@@ -268,5 +404,10 @@ export interface ListingDetailDto extends Omit<ListingCardDto, 'coverImage'> {
     reviewCount: number
     listingCount: number
     createdAt: string
+    address: string | null
+    telegram: string | null
+    workingHours: string | null
+    tags: string[]
+    accountType: 'INDIVIDUAL' | 'BUSINESS'
   }
 }

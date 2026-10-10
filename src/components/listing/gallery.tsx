@@ -5,6 +5,8 @@ import Image from 'next/image'
 import { ChevronLeft, ChevronRight, Expand, ImageOff, X } from 'lucide-react'
 import type { ImageDto } from '@/server/mappers'
 import { cn } from '@/lib/utils'
+import { useMessages } from '@/i18n/client'
+import { fmt } from '@/i18n/format'
 
 /**
  * Gorizontal "snap" karusel.
@@ -49,6 +51,7 @@ const ARROW_BASE =
   '[@media(hover:hover)]:flex'
 
 export function Gallery({ images, title }: { images: ImageDto[]; title: string }) {
+  const t = useMessages().listing.gallery
   const total = images.length
   const [lightbox, setLightbox] = React.useState(false)
   const { ref, index, setIndex, go, scrollTo, onScroll } = useCarousel(total)
@@ -70,19 +73,19 @@ export function Gallery({ images, title }: { images: ImageDto[]; title: string }
             onScroll={onScroll}
             className="hide-scrollbar snap-row"
             aria-roledescription="karusel"
-            aria-label={`${title} rasmlari`}
+            aria-label={fmt(t.photos, { title })}
           >
             {images.map((img, i) => (
               <button
                 key={img.id}
                 type="button"
                 onClick={() => setLightbox(true)}
-                aria-label={`${i + 1}-rasmni kattalashtirish`}
+                aria-label={fmt(t.zoomN, { n: i + 1 })}
                 className="snap-item relative aspect-[4/3] w-full shrink-0 sm:aspect-[16/10]"
               >
                 <Image
                   src={img.url}
-                  alt={`${title} — ${i + 1}-rasm`}
+                  alt={fmt(t.alt, { title, n: i + 1 })}
                   fill
                   sizes="(max-width: 1024px) 100vw, 60vw"
                   className="object-cover"
@@ -99,7 +102,7 @@ export function Gallery({ images, title }: { images: ImageDto[]; title: string }
               <button
                 type="button"
                 onClick={() => go(-1)}
-                aria-label="Oldingi rasm"
+                aria-label={t.prev}
                 className={cn(ARROW_BASE, 'left-3')}
               >
                 <ChevronLeft className="size-5" aria-hidden />
@@ -107,7 +110,7 @@ export function Gallery({ images, title }: { images: ImageDto[]; title: string }
               <button
                 type="button"
                 onClick={() => go(1)}
-                aria-label="Keyingi rasm"
+                aria-label={t.next}
                 className={cn(ARROW_BASE, 'right-3')}
               >
                 <ChevronRight className="size-5" aria-hidden />
@@ -118,7 +121,7 @@ export function Gallery({ images, title }: { images: ImageDto[]; title: string }
           <button
             type="button"
             onClick={() => setLightbox(true)}
-            aria-label="Kattalashtirish"
+            aria-label={t.zoom}
             className="absolute bottom-3 right-3 z-10 flex size-10 items-center justify-center rounded-lg bg-black/45 text-white backdrop-blur transition-colors hover:bg-black/70"
           >
             <Expand className="size-4" aria-hidden />
@@ -141,7 +144,7 @@ export function Gallery({ images, title }: { images: ImageDto[]; title: string }
                     setIndex(i)
                     scrollTo(i)
                   }}
-                  aria-label={`${i + 1}-rasmga oʻtish`}
+                  aria-label={fmt(t.goTo, { n: i + 1 })}
                   aria-current={i === index}
                   className="flex h-6 items-center px-1"
                 >
@@ -164,7 +167,7 @@ export function Gallery({ images, title }: { images: ImageDto[]; title: string }
                     setIndex(i)
                     scrollTo(i)
                   }}
-                  aria-label={`${i + 1}-rasm`}
+                  aria-label={fmt(t.thumb, { n: i + 1 })}
                   aria-current={i === index}
                   className={cn(
                     'relative aspect-[16/10] w-24 shrink-0 overflow-hidden rounded-lg border-2 transition-colors',
@@ -208,6 +211,7 @@ function Lightbox({
   startIndex: number
   onClose: (index: number) => void
 }) {
+  const t = useMessages().listing.gallery
   const total = images.length
   const { ref, index, go, scrollTo, onScroll } = useCarousel(total)
 
@@ -236,7 +240,7 @@ function Lightbox({
       className="fixed inset-0 z-50 flex flex-col bg-black/95 pb-safe pt-safe"
       role="dialog"
       aria-modal="true"
-      aria-label={`${title} — rasmlar`}
+      aria-label={fmt(t.dialog, { title })}
     >
       <div className="flex items-center justify-between p-3">
         <span className="tabular rounded-full bg-white/10 px-3 py-1.5 text-sm text-white">
@@ -245,7 +249,7 @@ function Lightbox({
         <button
           type="button"
           onClick={() => onClose(index)}
-          aria-label="Yopish"
+          aria-label={t.close}
           className="flex size-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
         >
           <X className="size-5" aria-hidden />
@@ -262,7 +266,7 @@ function Lightbox({
             <div key={img.id} className="snap-item relative h-full w-full shrink-0">
               <Image
                 src={img.url}
-                alt={`${title} — ${i + 1}-rasm`}
+                alt={fmt(t.alt, { title, n: i + 1 })}
                 fill
                 sizes="100vw"
                 className="object-contain"
@@ -276,7 +280,7 @@ function Lightbox({
             <button
               type="button"
               onClick={() => go(-1)}
-              aria-label="Oldingi rasm"
+              aria-label={t.prev}
               className={cn(ARROW_BASE, 'left-4 bg-white/10 hover:bg-white/20')}
             >
               <ChevronLeft className="size-6" aria-hidden />
@@ -284,7 +288,7 @@ function Lightbox({
             <button
               type="button"
               onClick={() => go(1)}
-              aria-label="Keyingi rasm"
+              aria-label={t.next}
               className={cn(ARROW_BASE, 'right-4 bg-white/10 hover:bg-white/20')}
             >
               <ChevronRight className="size-6" aria-hidden />
@@ -294,7 +298,7 @@ function Lightbox({
       </div>
 
       <p className="pb-2 text-center text-[12px] text-white/50 [@media(hover:hover)]:hidden">
-        Rasmni barmoq bilan suring
+        {t.swipe}
       </p>
     </div>
   )

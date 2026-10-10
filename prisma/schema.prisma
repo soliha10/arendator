@@ -93,6 +93,40 @@ enum CalcMethod {
   FIXED // arendator oylik to'lovni o'zi kiritadi
 }
 
+/// Hisob turi: jismoniy shaxs yoki yuridik (diler / avtosalon)
+enum AccountType {
+  INDIVIDUAL
+  BUSINESS
+}
+
+/// E'lonni ko'tarish darajasi
+enum PromotionTier {
+  NONE
+  VIP // rangli ramka, qidiruvda yuqorida
+  TOP // bosh sahifa va qidiruvning eng tepasida
+}
+
+enum PromotionRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  PRICE_DROP // saqlangan e'lon narxi tushdi
+  LEAD_NEW // e'lonimga yangi ariza
+  LEAD_STATUS // arizam holati o'zgardi
+  LISTING_STATUS // e'lonim moderatsiyadan o'tdi / rad etildi
+  SAVED_SEARCH // saqlangan qidiruvga mos yangi e'lon
+  SYSTEM
+}
+
+enum SearchAlertFrequency {
+  INSTANT
+  DAILY
+  WEEKLY
+}
+
 enum ScheduleStatus {
   PLANNED
   PAID
@@ -111,6 +145,11 @@ model User {
   fullName     String
   avatarUrl    String?
   role         Role    @default(USER)
+  accountType  AccountType @default(INDIVIDUAL)
+  telegram     String?
+
+  /// Bildirishnoma sozlamalari: { priceDrop, newLead, promos, paymentReminder, telegram, sms, email }
+  notificationPrefs Json?
 
   isPhoneVerified Boolean @default(false)
   isBlocked       Boolean @default(false)
@@ -123,6 +162,9 @@ model User {
   leads     Lead[]
   reviews   Review[]
   auditLogs AuditLog[]
+  notifications Notification[]
+  savedSearches SavedSearch[]
+  promotionRequests PromotionRequest[]
 
   lastLoginAt DateTime?
   createdAt   DateTime  @default(now())
@@ -153,6 +195,11 @@ model ArendatorProfile {
   telegram     String?
   instagram    String?
   workingHours String?
+  phone        String?
+  /// Diler kartochkasidagi teglar: "Halol lizing", "Trade-in" ...
+  tags         String[] @default([])
+  latitude     Float?
+  longitude    Float?
 
   isVerified Boolean   @default(false)
   verifiedAt DateTime?
@@ -256,6 +303,21 @@ model Listing {
   address      String?
   contactPhone String
   contactName  String?
+  telegram     String? // @username — xaridor yozishi uchun
+  latitude     Float?
+  longitude    Float?
+
+  /// Qulayliklar: "climate", "sunroof", ... (FEATURE_OPTIONS dagi kalitlar)
+  features String[] @default([])
+
+  // Naqd sotuv — to'lov shartlaridan mustaqil
+  hasCashSale   Boolean  @default(false)
+  cashPrice     Decimal? @db.Decimal(18, 2)
+  cashCurrency  Currency @default(UZS)
+  isNegotiable  Boolean  @default(false)
+
+  promotion     PromotionTier @default(NONE)
+  promotedUntil DateTime?
 
   status      ListingStatus @default(DRAFT)
   rejectReason String?
@@ -264,14 +326,20 @@ model Listing {
   minMonthlyPaymentUzs Decimal? @db.Decimal(18, 2)
   minDownPaymentUzs    Decimal? @db.Decimal(18, 2)
   carPriceUzs          Decimal? @db.Decimal(18, 2)
+  cashPriceUzs         Decimal? @db.Decimal(18, 2)
+  /// Narx tushganini ko'rsatish uchun oldingi narx (UZS)
+  previousPriceUzs     Decimal? @db.Decimal(18, 2)
+  priceChangedAt       DateTime?
+  minDailyRentUzs      Decimal? @db.Decimal(18, 2)
   minTermMonths        Int?
   maxTermMonths        Int?
   hasInstallment       Boolean  @default(false)
   hasRent              Boolean  @default(false)
 
-  viewCount     Int @default(0)
-  favoriteCount Int @default(0)
-  leadCount     Int @default(0)
+  viewCount        Int @default(0)
+  favoriteCount    Int @default(0)
+  leadCount        Int @default(0)
+  phoneRevealCount Int @default(0)
 
   isFeatured Boolean @default(false)
 
@@ -280,6 +348,9 @@ model Listing {
   favorites Favorite[]
   leads     Lead[]
   reviews   Review[]
+  priceHistory PriceHistory[]
+  notifications Notification[]
+  promotionRequests PromotionRequest[]
 
   publishedAt DateTime?
   expiresAt   DateTime?
@@ -294,6 +365,8 @@ model Listing {
   @@index([year])
   @@index([ownerId, status])
   @@index([isFeatured, publishedAt(sort: Desc)])
+  @@index([promotion, publishedAt(sort: Desc)])
+  @@index([cashPriceUzs])
 }
 
 model ListingImage {
@@ -331,6 +404,7 @@ model RentalPlan {
   downPayment    Decimal @db.Decimal(18, 2) // boshlang'ich to'lov
   termMonths     Int // muddat (oy)
   monthlyPayment Decimal @db.Decimal(18, 2) // oylik to'lov
+  dailyPayment   Decimal? @db.Decimal(18, 2) // kunlik ijara (faqat RENT)
   totalPayable   Decimal @db.Decimal(18, 2) // downPayment + monthly*term
   markupAmount   Decimal @db.Decimal(18, 2) @default(0) // ustama (jami)
   markupPercent  Decimal @db.Decimal(6, 2)  @default(0) // samarali yillik ustama foizi
@@ -478,4 +552,84 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([createdAt(sort: Desc)])
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Narx tarixi, bildirishnomalar, saqlangan qidiruvlar
+// ─────────────────────────────────────────────────────────────
+
+/// E'lon narxi o'zgargan har safar yoziladi — "narxi pasaydi" va grafik uchun
+model PriceHistory {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  priceUzs   Decimal  @db.Decimal(18, 2)
+  monthlyUzs Decimal? @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([listingId, createdAt(sort: Desc)])
+}
+
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type  NotificationType
+  title String
+  body  String  @db.Text
+  link  String?
+
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  data   Json?
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, readAt])
+}
+
+/// Foydalanuvchi saqlagan katalog filtri — mos yangi e'lon chiqsa xabar beriladi
+model SavedSearch {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  /// Katalog URL query qismi: "brand=chevrolet&maxMonthly=5000000"
+  query     String
+  notify    Boolean              @default(true)
+  frequency SearchAlertFrequency @default(INSTANT)
+
+  lastCheckedAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([notify])
+}
+
+/// VIP / TOP so'rovi — to'lov tizimi ulanguncha admin qo'lda tasdiqlaydi
+model PromotionRequest {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tier   PromotionTier
+  days   Int                    @default(7)
+  status PromotionRequestStatus @default(PENDING)
+  note   String?
+
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([listingId])
 }

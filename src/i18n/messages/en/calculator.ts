@@ -1,0 +1,142 @@
+import type uz from '../uz/calculator'
+
+const calculator: typeof uz = {
+  meta: {
+    title: 'Car leasing & installment calculator',
+    description:
+      'Calculate your monthly car payment: compare classic installments, financial leasing and rent-to-own side by side. Balance chart and yearly breakdown.',
+  },
+  hero: {
+    badge: 'Finance calculator',
+    hint: 'Real-time math · no sign-up needed',
+    title: 'Car finance analysis & payment schedule',
+    subtitle:
+      'Compare installments, leasing and rent-to-own side by side with precise numbers.',
+    disclaimer:
+      'Calculations are estimates for information only. Default rates are typical approximate values and can be changed. Final terms are set in the contract with the dealer or leasing company.',
+  },
+  actions: {
+    savePdf: 'Save as PDF',
+    findCars: 'Find matching cars',
+  },
+  input: {
+    car: 'Car (optional)',
+    carPlaceholder: 'e.g. Chevrolet Onix',
+    price: 'Car price',
+    currency: 'Currency',
+    down: 'Down payment',
+    downTypical: '30% — typical',
+    term: 'Financing term',
+    termValue: '{n} mo',
+    termChip: '{years} yr ({n} mo)',
+    rates: 'Adjust rates',
+    ratesHint: '(estimates)',
+    ratePerYear: '%/yr',
+    ratesNote:
+      'Default rates are estimates close to the typical market range. Ask the dealer or leasing company for the exact rate and enter it here.',
+  },
+  summary: {
+    label: 'Financial summary',
+    defaultTitle: 'Key figures',
+    financed: 'Amount financed',
+    lowestMonthly: 'Lowest monthly payment',
+    lowestTotal: 'Lowest total cost',
+    selected: 'Selected option',
+    perMonth: '{currency}/mo',
+    selectedHint: '{term} · {down}% down · {over} overpayment',
+    enterPrice: 'Enter the car price.',
+  },
+  schemesSection: {
+    label: 'Comparison',
+    title: '3 financing options compared',
+    hint: 'Tap a card — the chart and table below will follow that option.',
+  },
+  card: {
+    cheapest: 'Lowest total cost',
+    index: 'Option {n}',
+    monthly: 'Estimated monthly payment',
+    down: 'Down payment',
+    overpay: 'Overpayment',
+    total: 'Total amount payable',
+    prosCons: 'Pros and cons',
+    longFlat: 'Dealers rarely offer this option for longer than 24 months',
+  },
+  chart: {
+    label: 'Over time',
+    title: 'Balance reduction & ownership share',
+    model: '{scheme} · {n}-month model',
+    balance: 'Remaining balance',
+    equity: 'Your share',
+    amortization: 'Loan amortization',
+    start: 'Start: {amount}',
+    aria: 'Remaining balance chart',
+    yearMark: 'Year {n}: {amount}',
+    axisStart: 'Start',
+    axisMid: 'Month {n}',
+    axisEnd: 'Month {n} · paid off',
+    srSummary: 'The balance falls from {amount} to zero in {n} months.',
+  },
+  index: {
+    title: 'Yearly payment index',
+    yearTotal: 'Total in year {n}',
+    principalShare: 'Principal: {n}%',
+    interestShare: 'Interest: {n}%',
+    conclusion: 'Takeaway',
+    conclusionText:
+      'The share of markup is highest in the first year — paying off early during this period saves the most. Total overpayment:',
+  },
+  table: {
+    title: 'Yearly and monthly payment breakdown',
+    methodFlat: 'flat markup',
+    methodAnnuity: 'annuity',
+    yearly: 'Yearly',
+    monthly: 'Monthly',
+    period: 'Year {n} (months {from}–{to})',
+    equity: 'Owned {value}',
+    monthlyPayment: 'Monthly payment',
+    toPrincipal: 'To principal',
+    interest: 'Interest',
+    yearEndBalance: 'Balance at year end',
+    colPeriod: 'Period',
+    colMonthlyAvg: 'Monthly payment (avg.)',
+    colBalance: 'Remaining balance',
+    colEquity: 'Ownership share',
+    total: 'Total ({n} mo)',
+    withDown: 'Incl. down payment: {amount}',
+  },
+  cta: {
+    title: 'Happy with the numbers?',
+    text: 'Browse cars in the catalog that fit your monthly budget and down payment.',
+    pdf: 'PDF',
+    cars: 'Browse cars',
+  },
+  schemes: {
+    rassrochka: {
+      title: 'Classic installments',
+      subtitle:
+        'Installments directly from the dealer or seller. A flat markup is added once to the full amount.',
+      tag: 'Short term',
+      rateLabel: 'Annual markup (flat)',
+      pros: ['Lowest overpayment over a short term', 'Usually no bank or proof of income needed'],
+      cons: ['Terms are usually 12–24 months — higher monthly payment'],
+    },
+    lizing: {
+      title: 'Financial leasing',
+      subtitle: 'Through a leasing company or bank. Interest accrues on the remaining balance (annuity).',
+      tag: '3–5 years',
+      rateLabel: 'Annual rate (annuity)',
+      pros: ['Equal, lower monthly payments', 'Interest is recalculated if you pay off early'],
+      cons: ['Total interest grows over a long term'],
+    },
+    arenda: {
+      title: 'Rent-to-own',
+      subtitle: 'Drive right away with a small advance — the car is yours at the end of the term.',
+      tag: 'Rent-to-own',
+      rateLabel: 'Annual cost factor',
+      pros: ['Very small down payment', 'CASCO and inspections are often included'],
+      cons: ['Highest total cost over a long term'],
+    },
+  },
+}
+
+export default calculator

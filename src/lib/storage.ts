@@ -3,7 +3,7 @@ import { mkdir, writeFile, unlink } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
 import { nanoid } from 'nanoid'
-import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from './constants'
+import { MAX_UPLOAD_BYTES } from './constants'
 
 /**
  * Rasm saqlash qatlami.
@@ -35,17 +35,25 @@ export interface SavedImage {
   blurDataUrl: string
 }
 
-export class UploadError extends Error {}
+/** Foydalanuvchiga ko'rsatiladigan xato — `code` bo'yicha tarjima qilinadi */
+export type UploadErrorCode = 'empty' | 'tooLarge' | 'badType' | 'unreadable' | 'failed'
+
+export class UploadError extends Error {
+  constructor(
+    public code: UploadErrorCode,
+    message: string = code,
+  ) {
+    super(message)
+  }
+}
 
 function assertValid(file: File) {
-  if (file.size === 0) throw new UploadError('Fayl boʻsh')
+  if (file.size === 0) throw new UploadError('empty')
   if (file.size > MAX_UPLOAD_BYTES) {
-    throw new UploadError(
-      `Rasm hajmi ${MAX_UPLOAD_MB} MB dan oshmasligi kerak`,
-    )
+    throw new UploadError('tooLarge')
   }
   if (!ALLOWED_MIME.includes(file.type as (typeof ALLOWED_MIME)[number])) {
-    throw new UploadError('Faqat JPG, PNG, WebP yoki AVIF rasm yuklash mumkin')
+    throw new UploadError('badType')
   }
 }
 
@@ -55,7 +63,7 @@ async function processImage(buffer: Buffer) {
 
   const metadata = await image.metadata()
   if (!metadata.width || !metadata.height) {
-    throw new UploadError('Rasmni oʻqib boʻlmadi')
+    throw new UploadError('unreadable')
   }
 
   const resized = image.resize({
@@ -109,6 +117,7 @@ async function saveS3(
 
   if (!endpoint || !bucket || !publicUrl || !accessKeyId || !secretAccessKey) {
     throw new UploadError(
+      'failed',
       'S3 sozlamalari toʻliq emas: S3_ENDPOINT, S3_BUCKET, S3_PUBLIC_URL, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY kerak',
     )
   }
@@ -137,7 +146,7 @@ async function saveS3(
 
   if (!response.ok) {
     console.error('S3 upload failed:', response.status, await response.text())
-    throw new UploadError('Rasmni xotiraga yuklab boʻlmadi')
+    throw new UploadError('failed', 'Rasmni xotiraga yuklab boʻlmadi')
   }
 
   return `${publicUrl.replace(/\/$/, '')}/${key}`

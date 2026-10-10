@@ -1,13 +1,18 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidateLocalized } from '@/i18n/revalidate'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getActionUserWithRole } from '@/lib/auth/guards'
 import { moderationSchema } from '@/lib/validation/listing'
 import { recalcProfileCounters } from '@/server/plan-service'
+import { matchSavedSearches, notify } from '@/server/notifications'
 import { LISTING_ACTIVE_DAYS } from '@/lib/constants'
 import { errorState, fromZodError, successState, type ActionState } from './types'
+import { getRequestMessages } from '@/i18n/action'
+
+/** Javob matnlari foydalanuvchi tilida */
+const msg = async () => (await getRequestMessages()).server
 
 /** Har bir admin amali jurnalga yoziladi */
 async function writeAudit(
@@ -35,9 +40,9 @@ export async function moderateListingAction(
     const admin = await getActionUserWithRole(['ADMIN'])
     const listing = await prisma.listing.findUnique({
       where: { id: listingId },
-      select: { id: true, ownerId: true, publishedAt: true, title: true },
+      select: { id: true, ownerId: true, publishedAt: true, title: true, slug: true },
     })
-    if (!listing) return errorState('Eʼlon topilmadi')
+    if (!listing) return errorState((await msg()).errors.listingNotFound)
 
     if (action === 'approve') {
       await prisma.listing.update({
@@ -56,20 +61,43 @@ export async function moderateListingAction(
       })
     }
 
+    await notify(prisma, {
+      userId: listing.ownerId,
+      type: 'LISTING_STATUS',
+      title:
+        action === 'approve'
+          ? 'Eʼloningiz tasdiqlandi va chop etildi'
+          : 'Eʼloningiz rad etildi',
+      body:
+        action === 'approve'
+          ? `${listing.title} endi katalogda koʻrinadi.`
+          : `${listing.title}: ${reason ?? 'sabab koʻrsatilmagan'}. Tahrirlab qayta yuboring.`,
+      link: action === 'approve' ? `/elon/${listing.slug}` : `/kabinet/elon/${listing.id}/tahrirlash`,
+      listingId: listing.id,
+      data: {
+        tpl: action === 'approve' ? 'listingApproved' : 'listingRejected',
+        vars: { listing: listing.title, reason: reason ?? '' },
+      },
+    })
+    // Saqlangan qidiruvlar bo'yicha xabar — javobni kutmaymiz
+    if (action === 'approve') {
+      void matchSavedSearches(listing.id).catch((e) => console.error('matchSavedSearches:', e))
+    }
+
     await recalcProfileCounters(prisma, listing.ownerId)
     await writeAudit(admin.id, `listing.${action}`, 'Listing', listingId, {
       title: listing.title,
       reason: reason ?? null,
     })
 
-    revalidatePath('/admin/moderatsiya')
-    revalidatePath('/elonlar')
+    revalidateLocalized('/admin/moderatsiya')
+    revalidateLocalized('/elonlar')
     return successState(
-      action === 'approve' ? 'Eʼlon tasdiqlandi va chop etildi' : 'Eʼlon rad etildi',
+      action === 'approve' ? (await msg()).moderation.approved : (await msg()).moderation.rejected,
     )
   } catch (error) {
     console.error('moderateListingAction:', error)
-    return errorState('Amalni bajarib boʻlmadi')
+    return errorState((await msg()).errors.generic)
   }
 }
 
@@ -82,7 +110,7 @@ export async function toggleProfileVerificationAction(
       where: { id: profileId },
       select: { id: true, isVerified: true, companyName: true },
     })
-    if (!profile) return errorState('Profil topilmadi')
+    if (!profile) return errorState((await msg()).admin.profileNotFound)
 
     const next = !profile.isVerified
     await prisma.arendatorProfile.update({
@@ -98,28 +126,28 @@ export async function toggleProfileVerificationAction(
       { companyName: profile.companyName },
     )
 
-    revalidatePath('/admin/arendatorlar')
-    revalidatePath('/arendatorlar')
+    revalidateLocalized('/admin/arendatorlar')
+    revalidateLocalized('/dilerlar')
     return successState(
-      next ? 'Arendator tasdiqlandi' : 'Tasdiq bekor qilindi',
+      next ? (await msg()).admin.dealerVerified : (await msg()).admin.verificationRemoved,
     )
   } catch (error) {
     console.error('toggleProfileVerificationAction:', error)
-    return errorState('Amalni bajarib boʻlmadi')
+    return errorState((await msg()).errors.generic)
   }
 }
 
 export async function toggleUserBlockAction(userId: string): Promise<ActionState> {
   try {
     const admin = await getActionUserWithRole(['ADMIN'])
-    if (admin.id === userId) return errorState('Oʻzingizni bloklay olmaysiz')
+    if (admin.id === userId) return errorState((await msg()).admin.cannotBlockSelf)
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, isBlocked: true, role: true, fullName: true },
     })
-    if (!user) return errorState('Foydalanuvchi topilmadi')
-    if (user.role === 'ADMIN') return errorState('Administratorni bloklab boʻlmaydi')
+    if (!user) return errorState((await msg()).admin.userNotFound)
+    if (user.role === 'ADMIN') return errorState((await msg()).admin.cannotBlockAdmin)
 
     const next = !user.isBlocked
     await prisma.user.update({
@@ -135,11 +163,11 @@ export async function toggleUserBlockAction(userId: string): Promise<ActionState
       fullName: user.fullName,
     })
 
-    revalidatePath('/admin/foydalanuvchilar')
-    return successState(next ? 'Foydalanuvchi bloklandi' : 'Blok olib tashlandi')
+    revalidateLocalized('/admin/foydalanuvchilar')
+    return successState(next ? (await msg()).admin.userBlocked : (await msg()).admin.userUnblocked)
   } catch (error) {
     console.error('toggleUserBlockAction:', error)
-    return errorState('Amalni bajarib boʻlmadi')
+    return errorState((await msg()).errors.generic)
   }
 }
 
@@ -151,7 +179,7 @@ export async function updateExchangeRateAction(
   const raw = formData.get('usdRate')
   const rate = Number(String(raw ?? '').replace(/[\s ]/g, ''))
   if (!Number.isFinite(rate) || rate <= 0) {
-    return errorState('Kurs musbat son boʻlishi kerak', { usdRate: ['Notoʻgʻri qiymat'] })
+    return errorState((await msg()).admin.rateInvalid, { usdRate: [(await msg()).admin.valueInvalid] })
   }
 
   try {
@@ -163,12 +191,12 @@ export async function updateExchangeRateAction(
     })
     await writeAudit(admin.id, 'rate.update', 'ExchangeRate', 'USD', { rate })
 
-    revalidatePath('/admin')
+    revalidateLocalized('/admin')
     return successState(
-      'Kurs yangilandi. Yangi eʼlonlar shu kurs boʻyicha hisoblanadi.',
+      (await msg()).admin.rateUpdated,
     )
   } catch (error) {
     console.error('updateExchangeRateAction:', error)
-    return errorState('Kursni yangilab boʻlmadi')
+    return errorState((await msg()).admin.rateFailed)
   }
 }

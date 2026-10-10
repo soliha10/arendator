@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidateLocalized } from '@/i18n/revalidate'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth/guards'
 
@@ -32,7 +32,7 @@ export async function toggleFavoriteAction(
           data: { favoriteCount: { decrement: 1 } },
         }),
       ])
-      revalidatePath('/kabinet/saqlanganlar')
+      revalidateLocalized('/kabinet/saqlanganlar')
       return { ok: true, favorited: false }
     }
 
@@ -43,7 +43,7 @@ export async function toggleFavoriteAction(
         data: { favoriteCount: { increment: 1 } },
       }),
     ])
-    revalidatePath('/kabinet/saqlanganlar')
+    revalidateLocalized('/kabinet/saqlanganlar')
     return { ok: true, favorited: true }
   } catch (error) {
     console.error('toggleFavoriteAction:', error)

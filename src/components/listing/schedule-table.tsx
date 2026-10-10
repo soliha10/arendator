@@ -4,337 +4,178 @@ import * as React from 'react'
 import { ChevronDown, Download } from 'lucide-react'
 import type { Currency } from '@prisma/client'
 import type { ScheduleRowDto } from '@/server/mappers'
-import { formatDate, formatMoney } from '@/lib/format'
-import { Button } from '@/components/ui/button'
+import { currencyLabel, formatDate, formatMoney } from '@/lib/format'
+import { useLocale, useMessages } from '@/i18n/client'
+import { fmt, plural } from '@/i18n/format'
+import type { Messages } from '@/i18n/messages'
 import { cn } from '@/lib/utils'
 
-interface YearGroup {
-  year: number
-  rows: ScheduleRowDto[]
-  total: number
-  principal: number
-  markup: number
-}
+const PREVIEW_ROWS = 6
 
-function groupByYear(rows: ScheduleRowDto[]): YearGroup[] {
-  const map = new Map<number, YearGroup>()
-  for (const row of rows) {
-    const year = new Date(row.dueDate).getFullYear()
-    let group = map.get(year)
-    if (!group) {
-      group = { year, rows: [], total: 0, principal: 0, markup: 0 }
-      map.set(year, group)
-    }
-    group.rows.push(row)
-    group.total += row.amount
-    group.principal += row.principal
-    group.markup += row.markup
-  }
-  return [...map.values()].sort((a, b) => a.year - b.year)
-}
+type ScheduleText = Messages['listing']['schedule']
 
-function toCsv(rows: ScheduleRowDto[], currency: Currency): string {
-  const header = ['Oy', 'Sana', 'Toʻlov', 'Asosiy qarz', 'Ustama', 'Qoldiq']
+function toCsv(rows: ScheduleRowDto[], currency: Currency, t: ScheduleText): string {
   const lines = rows.map((r) =>
     [
       r.monthIndex,
       formatDate(r.dueDate),
-      r.amount,
+      r.balanceAfter + r.principal,
       r.principal,
       r.markup,
-      r.balanceAfter,
+      r.amount,
     ].join(';'),
   )
-  return [`# Valyuta: ${currency}`, header.join(';'), ...lines].join('\n')
+  return [fmt(t.csvCurrency, { currency }), t.csvHeader.join(';'), ...lines].join('\n')
 }
 
+/** "1-oy (Noyabr 2026)" — ICU'da o'zbekcha oy nomlari yo'q, lug'atdan olinadi */
+const monthLabel = (row: ScheduleRowDto, t: ScheduleText) => {
+  const d = new Date(row.dueDate)
+  return { index: fmt(t.monthIndex, { n: row.monthIndex }), date: `${t.months[d.getMonth()]} ${d.getFullYear()}` }
+}
+
+/**
+ * Oyma-oy to'lov jadvali. Avval birinchi oylar ko'rinadi — to'liq jadval
+ * bitta tugma bilan ochiladi (36–60 qator sahifani cho'zib yubormasligi uchun).
+ */
 export function ScheduleTable({
   schedule,
   currency,
   planName,
+  isRent = false,
 }: {
   schedule: ScheduleRowDto[]
   currency: Currency
   planName: string
+  isRent?: boolean
 }) {
-  const [mode, setMode] = React.useState<'year' | 'month'>('year')
-  const groups = React.useMemo(() => groupByYear(schedule), [schedule])
-  const firstYear = groups[0]?.year ?? null
-
-  const [openYears, setOpenYears] = React.useState<number[]>(
-    firstYear === null ? [] : [firstYear],
-  )
-  const [syncedFirstYear, setSyncedFirstYear] = React.useState(firstYear)
-
-  // Boshqa shartga oʻtilsa (grafik butunlay almashsa) birinchi yil ochiladi
-  if (firstYear !== syncedFirstYear) {
-    setSyncedFirstYear(firstYear)
-    setOpenYears(firstYear === null ? [] : [firstYear])
-  }
+  const t = useMessages().listing.schedule
+  const locale = useLocale()
+  const [expanded, setExpanded] = React.useState(false)
+  const money = (n: number) => formatMoney(n, currency, { withSuffix: false, locale })
+  const rows = expanded ? schedule : schedule.slice(0, PREVIEW_ROWS)
 
   const download = () => {
-    const blob = new Blob(['﻿' + toCsv(schedule, currency)], {
+    const blob = new Blob(['﻿' + toCsv(schedule, currency, t)], {
       type: 'text/csv;charset=utf-8',
     })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `tolov-grafigi-${planName.replace(/\s+/g, '-').toLowerCase()}.csv`
+    a.download = `${t.csvFile}-${planName.replace(/\s+/g, '-').toLowerCase()}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
 
-  const money = (n: number) => formatMoney(n, currency)
-
   if (schedule.length === 0) {
     return (
       <p className="rounded-xl bg-surface-2 p-4 text-sm text-muted">
-        Bu shart uchun grafik hali tuzilmagan.
+        {t.empty}
       </p>
     )
   }
 
+  const suffix = currencyLabel(currency, locale)
+
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-[10px] border border-border bg-surface-2 p-1">
-          {(
-            [
-              ['year', 'Yillik'],
-              ['month', 'Oyma-oy'],
-            ] as const
-          ).map(([value, label]) => (
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-[17px] font-bold text-text">
+          {t.title}
+        </h3>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={download}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-semibold text-muted transition-colors hover:bg-surface-2 hover:text-text"
+          >
+            <Download className="size-4" aria-hidden /> CSV
+          </button>
+          {schedule.length > PREVIEW_ROWS ? (
             <button
-              key={value}
               type="button"
-              onClick={() => setMode(value)}
-              className={cn(
-                'rounded-lg px-3.5 py-1.5 text-[13px] font-medium transition-colors',
-                mode === value
-                  ? 'bg-surface text-text shadow-sm'
-                  : 'text-muted hover:text-text',
-              )}
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+              className="inline-flex h-9 items-center gap-1 rounded-lg px-2.5 text-[13px] font-semibold text-primary transition-colors hover:bg-primary-soft"
             >
-              {label}
+              {expanded ? t.collapse : plural(locale, schedule.length, t.expand)}
+              <ChevronDown className={cn('size-4 transition-transform', expanded && 'rotate-180')} aria-hidden />
             </button>
-          ))}
+          ) : null}
         </div>
-
-        <Button variant="ghost" size="sm" onClick={download}>
-          <Download /> CSV
-        </Button>
       </div>
 
-      {mode === 'year' ? (
-        <>
-          {/* Telefon: jadval oʻrniga kartalar — gorizontal scroll kerak emas */}
-          <div className="space-y-2 sm:hidden">
-            {groups.map((g) => (
-              <div key={g.year} className="rounded-xl border border-border p-3.5">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="tabular text-[15px] font-semibold text-text">
-                    {g.year}
-                  </span>
-                  <span className="text-[13px] text-muted">{g.rows.length} oy</span>
-                </div>
-                <dl className="mt-2.5 space-y-1.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <dt className="text-[13px] text-muted">Jami toʻlov</dt>
-                    <dd className="tabular text-[14px] font-semibold text-text">
-                      {money(g.total)}
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <dt className="text-[13px] text-muted">Asosiy qarz</dt>
-                    <dd className="tabular text-[13px] text-muted">{money(g.principal)}</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <dt className="text-[13px] text-muted">Ustama</dt>
-                    <dd className="tabular text-[13px] text-warning">{money(g.markup)}</dd>
-                  </div>
-                </dl>
-              </div>
-            ))}
-            <div className="rounded-xl bg-surface-2 p-3.5">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-[14px] font-semibold text-text">Jami</span>
-                <span className="tabular text-[15px] font-bold text-text">
-                  {money(groups.reduce((s, g) => s + g.total, 0))}
+      {/* Telefon: jadval o'rniga ixcham qatorlar */}
+      <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border sm:hidden">
+        {rows.map((row) => {
+          const l = monthLabel(row, t)
+          return (
+            <li key={row.monthIndex} className="px-3.5 py-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-[13px] text-muted">
+                  <span className="font-semibold text-text">{l.index}</span> · {l.date}
+                </span>
+                <span className="tabular text-[15px] font-bold text-primary">
+                  {money(row.amount)}
                 </span>
               </div>
-              <p className="tabular mt-1 text-[12px] text-muted">
-                shundan ustama{' '}
-                <span className="text-warning">
-                  {money(groups.reduce((s, g) => s + g.markup, 0))}
-                </span>
-              </p>
-            </div>
-          </div>
+              {!isRent ? (
+                <p className="tabular mt-1 flex flex-wrap gap-x-3 text-[12px] text-subtle">
+                  <span>{t.principal} <span className="text-muted">{money(row.principal)}</span></span>
+                  <span>{t.markup} <span className="text-muted">{money(row.markup)}</span></span>
+                  <span>{t.balance} <span className="text-muted">{money(row.balanceAfter)}</span></span>
+                </p>
+              ) : null}
+            </li>
+          )
+        })}
+      </ul>
 
-          <div className="hidden overflow-x-auto rounded-xl border border-border sm:block">
-            <table className="w-full min-w-[520px] text-sm">
-              <thead className="bg-surface-2 text-left">
-                <tr className="text-[12px] uppercase tracking-wide text-subtle">
-                  <th className="px-4 py-2.5 font-semibold">Yil</th>
-                  <th className="px-4 py-2.5 font-semibold">Oylar</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Jami toʻlov</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Asosiy qarz</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Ustama</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {groups.map((g) => (
-                  <tr key={g.year} className="hover:bg-surface-2/60">
-                    <td className="tabular px-4 py-3 font-semibold text-text">{g.year}</td>
-                    <td className="tabular px-4 py-3 text-muted">{g.rows.length} oy</td>
-                    <td className="tabular px-4 py-3 text-right font-semibold text-text">
-                      {money(g.total)}
-                    </td>
-                    <td className="tabular px-4 py-3 text-right text-muted">
-                      {money(g.principal)}
-                    </td>
-                    <td className="tabular px-4 py-3 text-right text-warning">
-                      {money(g.markup)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="border-t-2 border-border bg-surface-2">
-                <tr className="text-sm font-semibold text-text">
-                  <td className="px-4 py-3" colSpan={2}>
-                    Jami
+      <div className="hidden overflow-x-auto rounded-xl border border-border sm:block">
+        <table className="w-full min-w-[640px] text-sm">
+          <thead className="bg-surface-2">
+            <tr className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+              <th className="px-4 py-3 text-left">{t.colMonth}</th>
+              {!isRent ? (
+                <>
+                  <th className="whitespace-nowrap px-4 py-3 text-right">{t.colBalance}</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-right">{t.colPrincipal}</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-right">{t.colMarkup}</th>
+                </>
+              ) : null}
+              <th className="whitespace-nowrap px-4 py-3 text-right">{t.colTotal}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {rows.map((row) => {
+              const l = monthLabel(row, t)
+              return (
+                <tr key={row.monthIndex} className="hover:bg-surface-2/60">
+                  <td className="whitespace-nowrap px-4 py-3 text-text">
+                    <span className="font-medium">{l.index}</span>{' '}
+                    <span className="text-muted">({l.date})</span>
                   </td>
-                  <td className="tabular px-4 py-3 text-right">
-                    {money(groups.reduce((s, g) => s + g.total, 0))}
-                  </td>
-                  <td className="tabular px-4 py-3 text-right">
-                    {money(groups.reduce((s, g) => s + g.principal, 0))}
-                  </td>
-                  <td className="tabular px-4 py-3 text-right text-warning">
-                    {money(groups.reduce((s, g) => s + g.markup, 0))}
+                  {!isRent ? (
+                    <>
+                      <td className="tabular whitespace-nowrap px-4 py-3 text-right text-text">
+                        {money(row.balanceAfter + row.principal)}
+                      </td>
+                      <td className="tabular whitespace-nowrap px-4 py-3 text-right text-muted">{money(row.principal)}</td>
+                      <td className="tabular whitespace-nowrap px-4 py-3 text-right text-muted">{money(row.markup)}</td>
+                    </>
+                  ) : null}
+                  <td className="tabular whitespace-nowrap px-4 py-3 text-right font-bold text-primary">
+                    {money(row.amount)} <span className="text-[11px] font-medium">{suffix}</span>
                   </td>
                 </tr>
-              </tfoot>
-            </table>
-          </div>
-        </>
-      ) : (
-        <div className="space-y-2">
-          {groups.map((g) => {
-            const open = openYears.includes(g.year)
-            return (
-              <div key={g.year} className="overflow-hidden rounded-xl border border-border">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpenYears((prev) =>
-                      prev.includes(g.year)
-                        ? prev.filter((y) => y !== g.year)
-                        : [...prev, g.year],
-                    )
-                  }
-                  aria-expanded={open}
-                  className="flex w-full items-center justify-between gap-3 bg-surface-2 px-4 py-3 text-left transition-colors hover:bg-surface-3"
-                >
-                  <span className="flex items-baseline gap-2.5">
-                    <span className="tabular text-sm font-semibold text-text">{g.year}</span>
-                    <span className="text-[13px] text-muted">{g.rows.length} oy</span>
-                  </span>
-                  <span className="flex items-center gap-3">
-                    <span className="tabular text-sm font-semibold text-text">
-                      {money(g.total)}
-                    </span>
-                    <ChevronDown
-                      className={cn(
-                        'size-4 text-subtle transition-transform',
-                        open && 'rotate-180',
-                      )}
-                    />
-                  </span>
-                </button>
-
-                {open ? (
-                  <>
-                    {/* Telefon: har oy — alohida qator, jadvalsiz */}
-                    <ul className="divide-y divide-border sm:hidden">
-                      {g.rows.map((row) => (
-                        <li key={row.monthIndex} className="px-3.5 py-3">
-                          <div className="flex items-baseline justify-between gap-3">
-                            <span className="tabular text-[13px] text-muted">
-                              <span className="font-medium text-text">
-                                {row.monthIndex}-oy
-                              </span>
-                              {' · '}
-                              {formatDate(row.dueDate)}
-                            </span>
-                            <span className="tabular text-[15px] font-semibold text-text">
-                              {money(row.amount)}
-                            </span>
-                          </div>
-                          <div className="tabular mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12px] text-subtle">
-                            <span>
-                              Asosiy: <span className="text-muted">{money(row.principal)}</span>
-                            </span>
-                            <span>
-                              Ustama: <span className="text-warning">{money(row.markup)}</span>
-                            </span>
-                            <span>
-                              Qoldiq: <span className="text-muted">{money(row.balanceAfter)}</span>
-                            </span>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div className="hidden overflow-x-auto sm:block">
-                      <table className="w-full min-w-[560px] text-sm">
-                        <thead>
-                          <tr className="border-b border-border text-[12px] uppercase tracking-wide text-subtle">
-                            <th className="px-4 py-2 text-left font-semibold">№</th>
-                            <th className="px-4 py-2 text-left font-semibold">Sana</th>
-                            <th className="px-4 py-2 text-right font-semibold">Toʻlov</th>
-                            <th className="px-4 py-2 text-right font-semibold">Asosiy</th>
-                            <th className="px-4 py-2 text-right font-semibold">Ustama</th>
-                            <th className="px-4 py-2 text-right font-semibold">Qoldiq</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {g.rows.map((row) => (
-                            <tr key={row.monthIndex} className="hover:bg-surface-2/60">
-                              <td className="tabular px-4 py-2.5 text-subtle">
-                                {row.monthIndex}
-                              </td>
-                              <td className="tabular px-4 py-2.5 text-muted">
-                                {formatDate(row.dueDate)}
-                              </td>
-                              <td className="tabular px-4 py-2.5 text-right font-medium text-text">
-                                {money(row.amount)}
-                              </td>
-                              <td className="tabular px-4 py-2.5 text-right text-muted">
-                                {money(row.principal)}
-                              </td>
-                              <td className="tabular px-4 py-2.5 text-right text-warning">
-                                {money(row.markup)}
-                              </td>
-                              <td className="tabular px-4 py-2.5 text-right text-subtle">
-                                {money(row.balanceAfter)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-            )
-          })}
-        </div>
-      )}
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
 
       <p className="mt-3 text-[12px] leading-relaxed text-subtle">
-        Grafik arendator kiritgan shartlar asosida hisoblangan. Yakuniy summalar
-        shartnomada aniqlashtiriladi.
+        {t.note}
       </p>
     </div>
   )

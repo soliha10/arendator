@@ -2,10 +2,12 @@
 
 import * as React from 'react'
 import Image from 'next/image'
-import { ChevronLeft, ChevronRight, ImagePlus, Loader2, Star, Trash2, Upload } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CloudUpload, GripVertical, ImagePlus, Loader2, Plus, Star, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { MAX_LISTING_IMAGES, MAX_UPLOAD_MB } from '@/lib/constants'
 import { cn } from '@/lib/utils'
+import { useLocale, useMessages } from '@/i18n/client'
+import { fmt, plural } from '@/i18n/format'
 import type { ImageDraft } from './types'
 
 export function ImageUploader({
@@ -15,6 +17,8 @@ export function ImageUploader({
   images: ImageDraft[]
   onChange: (images: ImageDraft[]) => void
 }) {
+  const locale = useLocale()
+  const t = useMessages().form.photos
   const [uploading, setUploading] = React.useState(false)
   const [progress, setProgress] = React.useState({ done: 0, total: 0 })
   const [dragOver, setDragOver] = React.useState(false)
@@ -35,12 +39,12 @@ export function ImageUploader({
 
     const room = MAX_LISTING_IMAGES - images.length
     if (room <= 0) {
-      toast.error(`Koʻpi bilan ${MAX_LISTING_IMAGES} ta rasm yuklash mumkin`)
+      toast.error(fmt(t.maxReached, { max: MAX_LISTING_IMAGES }))
       return
     }
     const selected = list.slice(0, room)
     if (list.length > room) {
-      toast.warning(`Faqat ${room} ta rasm qoʻshildi — limit ${MAX_LISTING_IMAGES} ta`)
+      toast.warning(fmt(t.partial, { room, max: MAX_LISTING_IMAGES }))
     }
 
     setUploading(true)
@@ -58,16 +62,15 @@ export function ImageUploader({
           // 413 da Vercel HTML qaytaradi — json() ni himoyalaymiz
           const data = await response.json().catch(() => null)
           firstError ??=
-            data?.error ??
             (response.status === 413
-              ? `«${file.name}» hajmi katta — kichikroq rasm tanlang`
-              : 'Rasmni yuklab boʻlmadi')
+              ? fmt(t.tooLarge, { name: file.name })
+              : (data?.error ?? t.uploadFailed))
           continue
         }
         const data = (await response.json()) as { images: ImageDraft[] }
         uploaded.push(...data.images)
       } catch {
-        firstError ??= 'Tarmoq xatosi. Qayta urinib koʻring.'
+        firstError ??= t.network
       } finally {
         setProgress((p) => ({ ...p, done: p.done + 1 }))
       }
@@ -75,7 +78,7 @@ export function ImageUploader({
 
     if (uploaded.length > 0) {
       onChange([...images, ...uploaded])
-      toast.success(`${uploaded.length} ta rasm yuklandi`)
+      toast.success(plural(locale, uploaded.length, t.uploaded))
     }
     if (firstError) toast.error(firstError)
 
@@ -92,56 +95,67 @@ export function ImageUploader({
     onChange(next)
   }
 
+  /** Sudrab tashlab tartiblash: `from` dagi rasm `to` o'rniga ko'chadi */
+  const reorder = (from: number, to: number) => {
+    if (from === to) return
+    const next = [...images]
+    const [item] = next.splice(from, 1)
+    next.splice(to, 0, item)
+    onChange(next)
+  }
+
   const remove = (index: number) => {
     onChange(images.filter((_, i) => i !== index))
   }
 
-  const makeCover = (index: number) => {
-    if (index === 0) return
-    const next = [...images]
-    const [item] = next.splice(index, 1)
-    onChange([item, ...next])
-  }
+  const makeCover = (index: number) => reorder(index, 0)
+
+  const [dragIndex, setDragIndex] = React.useState<number | null>(null)
+  const pick = () => inputRef.current?.click()
+  const room = MAX_LISTING_IMAGES - images.length
 
   return (
     <div>
       <div
         onDragOver={(e) => {
+          // Ichki tartiblash paytida yuklash zonasi yonmasin
+          if (dragIndex !== null) return
           e.preventDefault()
           setDragOver(true)
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => {
+          if (dragIndex !== null) return
           e.preventDefault()
           setDragOver(false)
           void upload(e.dataTransfer.files)
         }}
         className={cn(
-          'flex flex-col items-center justify-center rounded-[14px] border-2 border-dashed px-6 py-10 text-center transition-colors',
-          dragOver ? 'border-primary bg-primary-soft' : 'border-border-strong',
+          'flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-9 text-center transition-colors',
+          dragOver ? 'border-primary bg-primary-soft' : 'border-border-strong/70 bg-surface-2',
         )}
       >
-        {uploading ? (
-          <Loader2 className="size-8 animate-spin text-primary" />
-        ) : (
-          <ImagePlus className="size-8 text-subtle" />
-        )}
-        <p className="mt-3 text-sm font-medium text-text">
-          {uploading
-            ? `Yuklanmoqda… ${progress.done}/${progress.total}`
-            : 'Rasmlarni bu yerga tashlang'}
+        <span className="flex size-14 items-center justify-center rounded-full bg-primary-soft text-primary">
+          {uploading ? (
+            <Loader2 className="size-7 animate-spin" />
+          ) : (
+            <CloudUpload className="size-7" />
+          )}
+        </span>
+        <p className="mt-3 text-[15px] font-semibold text-text">
+          {uploading ? fmt(t.uploading, { done: progress.done, total: progress.total }) : t.drop}
         </p>
         <p className="mt-1 text-[13px] text-muted">
-          JPG, PNG yoki WebP · koʻpi bilan {MAX_LISTING_IMAGES} ta · har biri{' '}
-          {MAX_UPLOAD_MB} MB gacha
+          {fmt(t.formats, { mb: MAX_UPLOAD_MB, max: MAX_LISTING_IMAGES })}
+          <br className="hidden sm:block" /> {t.coverNote}
         </p>
         <button
           type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
-          className="mt-4 inline-flex h-10 items-center gap-2 rounded-[10px] border border-border-strong bg-surface px-4 text-sm font-medium text-text transition-colors hover:bg-surface-2 disabled:opacity-60"
+          onClick={pick}
+          disabled={uploading || room <= 0}
+          className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
-          <Upload className="size-4" /> Fayl tanlash
+          <ImagePlus className="size-4" /> {t.pick}
         </button>
         <input
           ref={inputRef}
@@ -155,40 +169,76 @@ export function ImageUploader({
 
       {images.length > 0 ? (
         <>
-          <p className="mt-4 text-[13px] text-muted">
-            Birinchi rasm muqova boʻladi. Tartibni oʻzgartirish uchun oʻqlardan
-            foydalaning.
-          </p>
-          <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="mt-4 flex items-center justify-between gap-2 text-[13px] text-muted">
+            <span>{t.reorderHint}</span>
+            <span className="tabular shrink-0 font-semibold text-text">
+              {images.length} / {MAX_LISTING_IMAGES}
+            </span>
+          </div>
+          <ul className="mt-2.5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {images.map((img, i) => (
               <li
                 key={img.url}
-                className="group relative overflow-hidden rounded-xl border border-border bg-surface-2"
+                draggable
+                onDragStart={(e) => {
+                  setDragIndex(i)
+                  e.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragEnd={() => setDragIndex(null)}
+                onDragOver={(e) => {
+                  if (dragIndex === null) return
+                  e.preventDefault()
+                }}
+                onDrop={(e) => {
+                  if (dragIndex === null) return
+                  e.preventDefault()
+                  e.stopPropagation()
+                  reorder(dragIndex, i)
+                  setDragIndex(null)
+                }}
+                className={cn(
+                  'group relative cursor-grab overflow-hidden rounded-xl border bg-surface-2 active:cursor-grabbing',
+                  i === 0 ? 'border-primary ring-1 ring-primary/40' : 'border-border',
+                  dragIndex === i && 'opacity-40',
+                )}
               >
-                <span className="relative block aspect-[16/10]">
+                <span className="relative block aspect-[4/3]">
                   <Image
                     src={img.url}
-                    alt={`${i + 1}-rasm`}
+                    alt={fmt(t.photoAlt, { n: i + 1 })}
                     fill
-                    sizes="200px"
-                    className="object-cover"
+                    sizes="220px"
+                    className="pointer-events-none object-cover"
                   />
                 </span>
 
                 {i === 0 ? (
-                  <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-fg">
-                    <Star className="size-2.5 fill-current" /> Muqova
+                  <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-primary px-2 py-0.5 text-[11px] font-bold text-primary-fg">
+                    <Star className="size-3 fill-current" /> {t.cover}
                   </span>
-                ) : null}
+                ) : (
+                  <span className="absolute left-2 top-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                    {i + 1}
+                  </span>
+                )}
 
-                <div className="flex items-center justify-between gap-1 border-t border-border bg-surface p-1.5">
-                  <div className="flex gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => remove(i)}
+                  aria-label={t.remove}
+                  className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-surface/90 text-text shadow-sm transition-colors hover:bg-danger hover:text-white"
+                >
+                  <X className="size-4" />
+                </button>
+
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/60 to-transparent p-1.5 pt-6">
+                  <span className="flex gap-0.5">
                     <button
                       type="button"
                       onClick={() => move(i, -1)}
                       disabled={i === 0}
-                      aria-label="Chapga surish"
-                      className="rounded-md p-1 text-subtle transition-colors hover:bg-surface-2 hover:text-text disabled:opacity-30"
+                      aria-label={t.moveLeft}
+                      className="rounded-md p-1 text-white/90 hover:bg-white/20 disabled:opacity-30"
                     >
                       <ChevronLeft className="size-4" />
                     </button>
@@ -196,36 +246,40 @@ export function ImageUploader({
                       type="button"
                       onClick={() => move(i, 1)}
                       disabled={i === images.length - 1}
-                      aria-label="Oʻngga surish"
-                      className="rounded-md p-1 text-subtle transition-colors hover:bg-surface-2 hover:text-text disabled:opacity-30"
+                      aria-label={t.moveRight}
+                      className="rounded-md p-1 text-white/90 hover:bg-white/20 disabled:opacity-30"
                     >
                       <ChevronRight className="size-4" />
                     </button>
-                  </div>
-                  <div className="flex gap-0.5">
-                    {i !== 0 ? (
-                      <button
-                        type="button"
-                        onClick={() => makeCover(i)}
-                        aria-label="Muqova qilish"
-                        title="Muqova qilish"
-                        className="rounded-md p-1 text-subtle transition-colors hover:bg-surface-2 hover:text-primary"
-                      >
-                        <Star className="size-4" />
-                      </button>
-                    ) : null}
+                  </span>
+                  {i !== 0 ? (
                     <button
                       type="button"
-                      onClick={() => remove(i)}
-                      aria-label="Oʻchirish"
-                      className="rounded-md p-1 text-subtle transition-colors hover:bg-danger-soft hover:text-danger"
+                      onClick={() => makeCover(i)}
+                      className="rounded-md px-1.5 py-1 text-[11px] font-semibold text-white hover:bg-white/20"
                     >
-                      <Trash2 className="size-4" />
+                      {t.makeCover}
                     </button>
-                  </div>
+                  ) : (
+                    <GripVertical className="mr-1 size-4 text-white/80" aria-hidden />
+                  )}
                 </div>
               </li>
             ))}
+            {room > 0 ? (
+              <li>
+                <button
+                  type="button"
+                  onClick={pick}
+                  disabled={uploading}
+                  className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border-strong bg-surface-2 text-center transition-colors hover:border-primary hover:bg-primary-soft disabled:opacity-60"
+                >
+                  <Plus className="size-6 text-primary" />
+                  <span className="text-[13px] font-semibold text-text">{t.addMore}</span>
+                  <span className="text-[11px] text-muted">{plural(locale, room, t.roomLeft)}</span>
+                </button>
+              </li>
+            ) : null}
           </ul>
         </>
       ) : null}

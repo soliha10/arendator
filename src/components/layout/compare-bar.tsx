@@ -1,8 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { Link, useMessages, usePathnameWithoutLocale } from '@/i18n/client'
+import { fmt } from '@/i18n/format'
 import { Scale, X } from 'lucide-react'
 import { useCompare } from '@/lib/compare-store'
 import { MAX_COMPARE_ITEMS } from '@/lib/constants'
@@ -15,7 +15,8 @@ import { Button } from '@/components/ui/button'
  */
 export function CompareBar() {
   const { items, count, isReady, remove, clear } = useCompare()
-  const pathname = usePathname()
+  const pathname = usePathnameWithoutLocale()
+  const t = useMessages().common.compareBar
 
   if (!isReady || count === 0 || pathname === '/taqqoslash') return null
 
@@ -25,7 +26,7 @@ export function CompareBar() {
         <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-border bg-surface/95 p-2.5 surface-shadow backdrop-blur-lg">
           <div className="flex shrink-0 items-center gap-2 pl-1 text-sm font-medium text-text sm:pl-2">
             <Scale className="size-[18px] text-primary" aria-hidden />
-            <span className="hidden sm:inline">Taqqoslash</span>
+            <span className="hidden sm:inline">{t.title}</span>
             <span className="tabular text-subtle">
               {count}/{MAX_COMPARE_ITEMS}
             </span>
@@ -53,7 +54,7 @@ export function CompareBar() {
                 <button
                   type="button"
                   onClick={() => remove(item.id)}
-                  aria-label={`${item.title} ni olib tashlash`}
+                  aria-label={fmt(t.removeItem, { title: item.title })}
                   className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-border bg-surface text-muted transition-colors hover:text-danger"
                 >
                   <X className="size-3" aria-hidden />
@@ -64,17 +65,17 @@ export function CompareBar() {
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
             <Button variant="ghost" size="sm" onClick={clear} className="hidden sm:inline-flex">
-              Tozalash
+              {t.clearShort}
             </Button>
             <Button asChild size="sm" disabled={count < 2}>
               <Link href="/taqqoslash">
-                Taqqoslash {count >= 2 ? `(${count})` : ''}
+                {t.open} {count >= 2 ? `(${count})` : ''}
               </Link>
             </Button>
             <button
               type="button"
               onClick={clear}
-              aria-label="Taqqoslash roʻyxatini tozalash"
+              aria-label={t.clear}
               className="tap -mr-1 inline-flex items-center justify-center rounded-[10px] text-subtle transition-colors hover:text-danger sm:hidden"
             >
               <X className="size-5" aria-hidden />

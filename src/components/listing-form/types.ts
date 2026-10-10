@@ -1,4 +1,15 @@
 import type { CalcMethod, Currency, PlanType } from '@prisma/client'
+import { LOCALES, type Locale } from '@/i18n/config'
+import { fmt } from '@/i18n/format'
+import uzForm from '@/i18n/messages/uz/form'
+import ruForm from '@/i18n/messages/ru/form'
+import enForm from '@/i18n/messages/en/form'
+
+const AUTO_NAMES: Record<Locale, typeof uzForm.autoName> = {
+  uz: uzForm.autoName,
+  ru: ruForm.autoName,
+  en: enForm.autoName,
+}
 
 /** Formadagi shart (barcha raqamlar string — input'lar bilan ishlash uchun) */
 export interface PlanDraft {
@@ -14,6 +25,8 @@ export interface PlanDraft {
   paymentDay: string
   startDate: string
   depositAmount: string
+  /** Kunlik ijara narxi — faqat RENT */
+  dailyPayment: string
   insuranceIncluded: boolean
   cascoIncluded: boolean
   maintenanceIncluded: boolean
@@ -56,10 +69,20 @@ export interface ListingFormState {
   address: string
   contactPhone: string
   contactName: string
+  telegram: string
+  latitude: number | null
+  longitude: number | null
 
-  /** Barcha shartlar uchun umumiy narx va valyuta */
+  /**
+   * Avtomobil narxi — naqd sotuv narxi ham, barcha shartlar uchun
+   * asos ham shu. Bitta raqam: xaridor naqd va muddatli narxni
+   * bir xil bazadan solishtiradi.
+   */
   carPrice: string
   currency: Currency
+  hasCashSale: boolean
+  isNegotiable: boolean
+  features: string[]
 
   images: ImageDraft[]
   plans: PlanDraft[]
@@ -84,6 +107,7 @@ export function emptyPlan(overrides: Partial<PlanDraft> = {}): PlanDraft {
     paymentDay: '5',
     startDate: '',
     depositAmount: '',
+    dailyPayment: '',
     insuranceIncluded: false,
     cascoIncluded: false,
     maintenanceIncluded: false,
@@ -99,7 +123,7 @@ export function emptyPlan(overrides: Partial<PlanDraft> = {}): PlanDraft {
   }
 }
 
-export function emptyForm(defaultPhone: string, defaultName: string): ListingFormState {
+export function emptyForm(defaultPhone: string, defaultName: string, locale: Locale = 'uz'): ListingFormState {
   return {
     title: '',
     description: '',
@@ -119,11 +143,70 @@ export function emptyForm(defaultPhone: string, defaultName: string): ListingFor
     address: '',
     contactPhone: defaultPhone,
     contactName: defaultName,
+    telegram: '',
+    latitude: null,
+    longitude: null,
     carPrice: '',
     currency: 'UZS',
+    hasCashSale: true,
+    isNegotiable: false,
+    features: [],
     images: [],
-    plans: [emptyPlan({ name: '24 oylik rassrochka', isDefault: true })],
+    plans: [installmentPlan(locale, { isDefault: true })],
   }
+}
+
+/** Muddatli to'lov / lizing uchun boshlang'ich shart */
+export function installmentPlan(locale: Locale, overrides: Partial<PlanDraft> = {}): PlanDraft {
+  const termMonths = overrides.termMonths ?? '36'
+  return emptyPlan({
+    name: autoPlanName({ planType: 'INSTALLMENT', termMonths, ownershipTransfer: true }, locale),
+    termMonths,
+    annualRatePercent: '24',
+    ...overrides,
+  })
+}
+
+/**
+ * Arenda sharti: oylik ijara FIXED usulda kiritiladi, mulk o'tmaydi.
+ * Standart muddat 24 oy.
+ */
+export function rentPlan(locale: Locale, overrides: Partial<PlanDraft> = {}): PlanDraft {
+  return emptyPlan({
+    name: autoPlanName({ planType: 'RENT', termMonths: '24', ownershipTransfer: false }, locale),
+    planType: 'RENT',
+    calcMethod: 'FIXED',
+    termMonths: '24',
+    annualRatePercent: '0',
+    downPayment: '0',
+    ownershipTransfer: false,
+    insuranceIncluded: true,
+    ...overrides,
+  })
+}
+
+/**
+ * Avtomatik nom: foydalanuvchi qo'lda o'zgartirmagan bo'lsa yangilanadi.
+ * Istalgan tildagi avtomatik nom taniladi — til almashtirilsa ham.
+ */
+const AUTO_NAME_RES: RegExp[] = LOCALES.flatMap((l) =>
+  Object.values(AUTO_NAMES[l]).map(
+    (tpl) => new RegExp(`^${tpl.replace(/[.*+?^$()|[\]\\]/g, '\\$&').replace('{n}', '\\d+')}$`),
+  ),
+)
+
+export function isAutoPlanName(name: string): boolean {
+  return AUTO_NAME_RES.some((re) => re.test(name))
+}
+
+export function autoPlanName(
+  p: Pick<PlanDraft, 'planType' | 'termMonths' | 'ownershipTransfer'>,
+  locale: Locale,
+): string {
+  const t = AUTO_NAMES[locale]
+  const n = p.termMonths
+  if (p.planType === 'RENT') return fmt(p.ownershipTransfer ? t.rentToOwn : t.rent, { n })
+  return fmt(p.planType === 'LEASING' ? t.leasing : t.installment, { n })
 }
 
 /** Formani server kutayotgan formatga o'giradi */
@@ -148,6 +231,14 @@ export function toPayload(form: ListingFormState, publish: boolean) {
     address: form.address || undefined,
     contactPhone: form.contactPhone,
     contactName: form.contactName || undefined,
+    telegram: form.telegram || undefined,
+    latitude: form.latitude ?? undefined,
+    longitude: form.longitude ?? undefined,
+    features: form.features,
+    hasCashSale: form.hasCashSale,
+    cashPrice: form.hasCashSale ? form.carPrice : undefined,
+    cashCurrency: form.currency,
+    isNegotiable: form.isNegotiable,
     images: form.images,
     publish,
     plans: form.plans.map((p) => ({
@@ -164,6 +255,7 @@ export function toPayload(form: ListingFormState, publish: boolean) {
       paymentDay: p.paymentDay || '5',
       startDate: p.startDate || '',
       depositAmount: p.depositAmount || undefined,
+      dailyPayment: p.planType === 'RENT' ? p.dailyPayment || undefined : undefined,
       insuranceIncluded: p.insuranceIncluded,
       cascoIncluded: p.cascoIncluded,
       maintenanceIncluded: p.maintenanceIncluded,

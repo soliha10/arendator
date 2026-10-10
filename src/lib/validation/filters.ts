@@ -57,7 +57,15 @@ export const listingFiltersSchema = z.object({
   fuel: csvEnum(['PETROL', 'DIESEL', 'GAS_PETROL', 'HYBRID', 'ELECTRIC'] as const),
   drive: csvEnum(['FWD', 'RWD', 'AWD'] as const),
   condition: csvEnum(['NEW', 'USED'] as const),
-  planType: csvEnum(['INSTALLMENT', 'RENT', 'LEASING'] as const),
+  /** CASH — naqd sotuv (to'lov sharti emas, e'lon belgisi) */
+  planType: csvEnum(['INSTALLMENT', 'RENT', 'LEASING', 'CASH'] as const),
+  /** qulayliklar: FEATURE_OPTIONS kalitlari */
+  features: csvString,
+  /** faqat narxi tushgan e'lonlar */
+  priceDrop: z
+    .string()
+    .optional()
+    .transform((v) => v === '1' || v === 'true'),
 
   // Asosiy pul filtrlari (UZS'da) — arendatorlar kiritgan qiymatlar bo'yicha
   monthlyMin: posNumber,
@@ -130,7 +138,7 @@ export function countActiveFilters(f: ListingFilters): number {
   let count = 0
   const arrays = [
     f.brand, f.model, f.region, f.body, f.transmission,
-    f.fuel, f.drive, f.condition, f.planType,
+    f.fuel, f.drive, f.condition, f.planType, f.features,
   ]
   for (const arr of arrays) if (arr.length > 0) count += 1
 
@@ -143,6 +151,7 @@ export function countActiveFilters(f: ListingFilters): number {
 
   if (f.verified) count += 1
   if (f.insurance) count += 1
+  if (f.priceDrop) count += 1
 
   return count
 }

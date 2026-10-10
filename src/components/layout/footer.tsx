@@ -1,70 +1,96 @@
-import Link from 'next/link'
-import { Mail, MapPin, Phone, Send } from 'lucide-react'
+import { Clock, Headphones, Mail, Send } from 'lucide-react'
+import { formatPhone } from '@/lib/format'
+import { SITE, telegramUrl } from '@/lib/site'
 import { Logo } from './logo'
+import { Link } from '@/i18n/client'
+import { fmt } from '@/i18n/format'
+import { getMessages } from '@/i18n/server'
 
-const COLUMNS = [
-  {
-    title: 'Xaridorlar uchun',
-    links: [
-      { href: '/elonlar', label: 'Barcha eʼlonlar' },
-      { href: '/elonlar?sort=monthly_asc', label: 'Eng arzon oylik toʻlov' },
-      { href: '/elonlar?condition=NEW', label: 'Yangi avtomobillar' },
-      { href: '/taqqoslash', label: 'Taqqoslash' },
-      { href: '/kalkulyator', label: 'Rassrochka kalkulyatori' },
-    ],
-  },
-  {
-    title: 'Arendatorlar uchun',
-    links: [
-      { href: '/royxatdan-otish?rol=arendator', label: 'Arendator boʻlish' },
-      { href: '/kabinet/elon/yangi', label: 'Eʼlon joylash' },
-      { href: '/arendatorlar', label: 'Arendatorlar reytingi' },
-      { href: '/qollanma', label: 'Qoʻllanma' },
-    ],
-  },
-  {
-    title: 'Kompaniya',
-    links: [
-      { href: '/haqida', label: 'Loyiha haqida' },
-      { href: '/shartlar', label: 'Foydalanish shartlari' },
-      { href: '/maxfiylik', label: 'Maxfiylik siyosati' },
-      { href: '/aloqa', label: 'Bogʻlanish' },
-    ],
-  },
-]
+export async function Footer() {
+  const m = await getMessages()
+  const t = m.common.footer
+  const columns = [
+    {
+      title: t.popular,
+      links: [
+        { href: '/elonlar?q=Onix', label: 'Chevrolet Onix' },
+        { href: '/elonlar?q=Tracker', label: 'Chevrolet Tracker' },
+        { href: '/elonlar?q=Cobalt', label: 'Chevrolet Cobalt' },
+        { href: '/elonlar?brand=byd', label: t.popularBydLabel },
+        { href: '/elonlar?brand=kia', label: 'Kia' },
+        { href: '/elonlar?condition=NEW', label: t.popularNew },
+      ],
+    },
+    {
+      title: t.buyers,
+      links: [
+        { href: '/elonlar?planType=RENT', label: t.rent },
+        { href: '/elonlar?planType=INSTALLMENT', label: t.installment },
+        { href: '/elonlar?planType=LEASING', label: t.leasing },
+        { href: '/kalkulyator', label: t.calculator },
+        { href: '/taqqoslash', label: t.compare },
+        { href: '/dilerlar', label: t.dealers },
+      ],
+    },
+    {
+      title: t.forDealers,
+      links: [
+        { href: '/royxatdan-otish?turi=yuridik', label: t.addShowroom },
+        { href: '/kabinet/elon/yangi', label: t.postAd },
+        { href: '/qollanma', label: t.guide },
+        { href: '/haqida', label: t.aboutLink },
+        { href: '/aloqa', label: t.contact },
+      ],
+    },
+  ]
+  const legal = [
+    { href: '/shartlar', label: t.terms },
+    { href: '/maxfiylik', label: t.privacy },
+    { href: '/aloqa', label: t.complaint },
+  ]
 
-export function Footer() {
   return (
-    <footer className="mt-12 border-t border-border bg-surface pb-nav sm:mt-16 lg:pb-0">
-      <div className="container-page py-10 sm:py-12">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
-          <div className="lg:col-span-2">
+    <footer className="mt-16 border-t border-border bg-surface-2 pb-nav lg:pb-0">
+      <div className="container-page py-12">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          <div>
             <Logo />
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted">
-              Avtomobilni rassrochka va arendaga olish uchun ochiq platforma.
-              Boshlangʻich toʻlov, oylik toʻlov va toʻliq toʻlov grafigi — hammasi
-              bir joyda, yashirin shartlarsiz.
+              {t.about}
             </p>
-            <div className="mt-5 space-y-2.5 text-sm text-muted">
-              <a href="tel:+998712000000" className="flex items-center gap-2.5 hover:text-text">
-                <Phone className="size-4 text-subtle" /> +998 71 200 00 00
+            <div className="mt-5 space-y-2 text-[13px] text-text">
+              <a href={`tel:${SITE.phone}`} className="tabular flex items-center gap-2 hover:text-primary">
+                <Headphones className="size-4 text-primary" aria-hidden />
+                {fmt(t.support, { phone: formatPhone(SITE.phone) })}
               </a>
-              <a href="mailto:info@arendator.uz" className="flex items-center gap-2.5 hover:text-text">
-                <Mail className="size-4 text-subtle" /> info@arendator.uz
+              <a href={`mailto:${SITE.email}`} className="flex items-center gap-2 hover:text-primary">
+                <Mail className="size-4 text-primary" aria-hidden /> {SITE.email}
               </a>
-              <p className="flex items-center gap-2.5">
-                <MapPin className="size-4 text-subtle" /> Toshkent shahri
+              <p className="flex items-center gap-2">
+                <Clock className="size-4 text-primary" aria-hidden /> {fmt(t.hours, { hours: t.workingHours })}
               </p>
             </div>
+            <a
+              href={telegramUrl(SITE.telegram)}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="mt-5 inline-flex items-center gap-3 rounded-xl bg-primary-soft px-4 py-2.5 text-primary transition-colors hover:brightness-95"
+            >
+              <Send className="size-5" aria-hidden />
+              <span className="leading-tight">
+                <span className="block text-[11px] font-medium opacity-80">{t.channelHint}</span>
+                <span className="block text-sm font-bold">{t.channelCta}</span>
+              </span>
+            </a>
           </div>
 
-          {COLUMNS.map((col) => (
+          {columns.map((col) => (
             <div key={col.title}>
-              <h3 className="text-sm font-semibold text-text">{col.title}</h3>
+              <h3 className="text-[15px] font-bold text-text">{col.title}</h3>
               <ul className="mt-4 space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className="text-sm text-muted transition-colors hover:text-text">
+                    <Link href={link.href} className="text-sm text-muted transition-colors hover:text-primary">
                       {link.label}
                     </Link>
                   </li>
@@ -74,28 +100,23 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-10 flex flex-col items-start justify-between gap-4 border-t border-border pt-6 sm:flex-row sm:items-center">
-          <p className="text-[13px] text-subtle">
-            © {new Date().getFullYear()} Arendator. Barcha huquqlar himoyalangan.
+        <div className="mt-10 flex flex-col gap-4 border-t border-border pt-6 md:flex-row md:items-center md:justify-between">
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] font-medium text-muted">
+            {legal.map((l) => (
+              <li key={l.href + l.label}>
+                <Link href={l.href} className="hover:text-text">
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[13px] font-medium text-muted">
+            {fmt(t.rights, { year: new Date().getFullYear(), name: SITE.name })}
           </p>
-          <div className="flex items-center gap-3">
-            <a
-              href="https://t.me/"
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex size-9 items-center justify-center rounded-[10px] border border-border text-muted transition-colors hover:bg-surface-2 hover:text-text"
-              aria-label="Telegram"
-            >
-              <Send className="size-4" />
-            </a>
-          </div>
         </div>
 
-        <p className="mt-6 text-[12px] leading-relaxed text-subtle">
-          Diqqat: platformadagi toʻlov shartlari arendatorlar tomonidan kiritiladi.
-          Shartnoma imzolashdan oldin barcha shartlarni arendator bilan yozma
-          tasdiqlang. Arendator.uz vositachi platforma boʻlib, moliyaviy
-          xizmat koʻrsatuvchi tashkilot emas.
+        <p className="mt-5 text-[12px] leading-relaxed text-subtle">
+          {fmt(t.disclaimer, { name: SITE.name })}
         </p>
       </div>
     </footer>
